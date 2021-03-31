@@ -1,0 +1,204 @@
+*
+{
+    box-sizing: border-box;
+}
+
+body
+{
+    font-family: 'roboto slab'; 
+    font-size: 11pt;
+
+    color: #151d33;
+    background: #ccc;
+}
+
+.amount
+{
+    text-align: right;
+}
+
+.page
+{
+    width: 21cm;
+    height: 29.7cm;
+    margin: 1cm auto;
+
+    background-color: #fff;
+    box-shadow: 0 0 .5cm rgba(0, 0, 0, .5);
+}
+
+.invoice
+{
+    display: flex;
+    flex-direction: row;
+
+    padding: 1cm;
+
+    justify-content: space-between;
+}
+.invoice > *
+{
+    padding: .5cm;
+}
+.invoice header
+{
+    position: relative;
+
+    width: 6cm;
+}
+.invoice header object
+{
+    width: 100%;
+    height: 5cm; 
+    margin-bottom: .5cm;
+}
+.invoice header .invoice-data
+{
+    margin-bottom: .5cm;
+
+    text-align: center;
+}
+.invoice header .invoice-data span
+{
+    display: block;
+
+    padding: .2cm 0;
+}
+.invoice header .invoice-data span.number
+{
+    font-weight: bold;
+}
+.invoice header .invoice-data h1
+{
+    font-size: 48px; 
+
+    color: #339eb8;
+    border-top: 1px solid #151d33;
+    border-bottom: 1px solid #151d33;
+}
+.invoice header .address
+{
+    margin-top: 2.2cm;
+}
+.invoice header .address section
+{
+    line-height: 1.2; 
+
+    margin-top: 2cm;
+}
+.invoice header .address section h2
+{
+    font-weight: bold; 
+
+    margin-bottom: .5cm;
+}
+.invoice header .address section strong
+{
+    color: #339eb8;
+}
+.invoice main
+{
+    display: flex;
+    flex-direction: column;
+
+    width: 12cm;
+
+    background-color: rgba(21, 29, 51, .1);
+
+    justify-content: space-between;
+}
+.invoice .calculation
+{
+    display: flex;
+    flex-direction: column;
+
+    height: 17.3cm;
+
+    justify-content: space-between;
+}
+.invoice .detail-view
+{
+    flex-grow: 1;
+}
+.invoice .detail-view table
+{
+    width: 100%;
+
+    table-layout: fixed;
+    border-collapse: collapse;
+
+    text-align: left;
+}
+.invoice .detail-view table th
+{
+    height: 1cm;
+
+    border-bottom: 2px solid #151d33;
+}
+.invoice .detail-view table th:nth-child(1)
+{
+    width: 5cm;
+}
+.invoice .detail-view table td
+{
+    height: 1cm;
+
+    border-bottom: 1px solid rgba(21, 29, 51, .1);
+}
+.invoice .total
+{
+    display: flex;
+
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+.invoice .total table
+{
+    width: 50%;
+
+    border-collapse: collapse;
+}
+.invoice .total table tr
+{
+    height: 1cm;
+
+    border-bottom: 1px solid rgba(21, 29, 51, .1);
+}
+.invoice .total table tr:last-child
+{
+    border-bottom: 0;
+}
+.invoice .payment-info
+{
+    line-height: 1.2;
+
+    position: absolute;
+    bottom: 0;
+
+    display: flex;
+
+    padding: .5cm 0;
+
+    text-align: center;
+
+    border-top: 1px solid rgba(21, 29, 51, .1);
+
+    align-items: center;
+}
+.invoice .payment-info strong
+{
+    display: block;
+}
+
+@media print
+{
+    body,
+    .page
+    {
+        margin: 0;
+
+        box-shadow: 0;
+
+        -webkit-print-color-adjust: exact;
+    }
+}

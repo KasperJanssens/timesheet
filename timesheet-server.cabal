@@ -1,0 +1,196 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: c65bf718663f54bc64e1669893c44670003ba659aa4d6c1a455fba84f61cbac1
+
+name:           timesheet-server
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/timesheet-server#readme>
+homepage:       https://github.com/githubuser/timesheet-server#readme
+bug-reports:    https://github.com/githubuser/timesheet-server/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2021 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/timesheet-server
+
+library
+  exposed-modules:
+      Application.CompanyService
+      Application.CustomerService
+      Application.DailyService
+      Application.Environment
+      Application.InvoiceService
+      Application.MapUtil
+      Application.MonthlyService
+      Application.ServiceClass
+      Domain.Company
+      Domain.Customer
+      Domain.Daily
+      Domain.FixedPriceInvoice
+      Domain.Invoice
+      Domain.Monthly
+      Domain.MonthlyReport
+      ExternalAPI.ApiType
+      ExternalAPI.FrontEndTypes.DailyJson
+      ExternalAPI.FrontEndTypes.MonthlyListJson
+      ExternalAPI.NewTypes.NewCustomer
+      ExternalAPI.NewTypes.NewDaily
+      ExternalAPI.NewTypes.NewInvoice
+      ExternalAPI.Server
+      ExternalAPI.WorkTypeJson
+      InternalAPI.Persistence.BusinessId
+      InternalAPI.Persistence.CompanyRepository
+      InternalAPI.Persistence.CustomerRepository
+      InternalAPI.Persistence.DailyRepository
+      InternalAPI.Persistence.Database
+      InternalAPI.Persistence.FixedPriceInvoiceRepository
+      InternalAPI.Persistence.InvoiceRepository
+      SmallDPProblemn
+  other-modules:
+      Paths_timesheet_server
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson ==1.5.6.0
+    , aeson-casing ==0.2.0.0
+    , aeson-pretty ==0.8.8
+    , base >=4.7 && <5
+    , bytestring ==0.10.12.0
+    , containers ==0.6.2.1
+    , either ==5.0.1.1
+    , hspec ==2.7.8
+    , http-client ==0.6.4.1
+    , http-types ==0.12.3
+    , monad-logger ==0.3.36
+    , mtl ==2.2.2
+    , persistent ==2.11.0.4
+    , persistent-postgresql ==2.11.0.1
+    , persistent-template ==2.9.1.0
+    , port-utils ==0.2.1.0
+    , resource-pool ==0.2.3.2
+    , resourcet ==1.2.4.2
+    , safe ==0.3.19
+    , servant ==0.18.2
+    , servant-client ==0.18.2
+    , servant-server ==0.18.2
+    , stm ==2.5.0.0
+    , string-interpolate ==0.3.1.0
+    , text ==1.2.4.1
+    , text-builder ==0.6.6.2
+    , time ==1.9.3
+    , transformers ==0.5.6.2
+    , uuid ==1.3.14
+    , wai ==3.2.3
+    , wai-cors ==0.2.7
+    , wai-extra ==3.1.6
+    , wai-logger ==2.3.6
+    , warp ==3.3.14
+  default-language: Haskell2010
+
+executable timesheet-server-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_timesheet_server
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson ==1.5.6.0
+    , aeson-casing ==0.2.0.0
+    , aeson-pretty ==0.8.8
+    , base >=4.7 && <5
+    , bytestring ==0.10.12.0
+    , containers ==0.6.2.1
+    , either ==5.0.1.1
+    , hspec ==2.7.8
+    , http-client ==0.6.4.1
+    , http-types ==0.12.3
+    , monad-logger ==0.3.36
+    , mtl ==2.2.2
+    , persistent ==2.11.0.4
+    , persistent-postgresql ==2.11.0.1
+    , persistent-template ==2.9.1.0
+    , port-utils ==0.2.1.0
+    , resource-pool ==0.2.3.2
+    , resourcet ==1.2.4.2
+    , safe ==0.3.19
+    , servant ==0.18.2
+    , servant-client ==0.18.2
+    , servant-server ==0.18.2
+    , stm ==2.5.0.0
+    , string-interpolate ==0.3.1.0
+    , text ==1.2.4.1
+    , text-builder ==0.6.6.2
+    , time ==1.9.3
+    , timesheet-server
+    , transformers ==0.5.6.2
+    , uuid ==1.3.14
+    , wai ==3.2.3
+    , wai-cors ==0.2.7
+    , wai-extra ==3.1.6
+    , wai-logger ==2.3.6
+    , warp ==3.3.14
+  default-language: Haskell2010
+
+test-suite timesheet-server-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Application.InvoiceServiceSpec
+      ExternalAPI.MonthlyReportSpec
+      Helper.DatabaseHelper
+      InternalAPI.Persistence.CustomerRepositorySpec
+      InternalAPI.Persistence.DailyRepositorySpec
+      Paths_timesheet_server
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson ==1.5.6.0
+    , aeson-casing ==0.2.0.0
+    , aeson-pretty ==0.8.8
+    , base >=4.7 && <5
+    , bytestring ==0.10.12.0
+    , containers ==0.6.2.1
+    , either ==5.0.1.1
+    , hspec ==2.7.8
+    , http-client ==0.6.4.1
+    , http-types ==0.12.3
+    , monad-logger ==0.3.36
+    , mtl ==2.2.2
+    , persistent ==2.11.0.4
+    , persistent-postgresql ==2.11.0.1
+    , persistent-template ==2.9.1.0
+    , port-utils ==0.2.1.0
+    , resource-pool ==0.2.3.2
+    , resourcet ==1.2.4.2
+    , safe ==0.3.19
+    , servant ==0.18.2
+    , servant-client ==0.18.2
+    , servant-server ==0.18.2
+    , stm ==2.5.0.0
+    , string-interpolate ==0.3.1.0
+    , text ==1.2.4.1
+    , text-builder ==0.6.6.2
+    , time ==1.9.3
+    , timesheet-server
+    , transformers ==0.5.6.2
+    , uuid ==1.3.14
+    , wai ==3.2.3
+    , wai-cors ==0.2.7
+    , wai-extra ==3.1.6
+    , wai-logger ==2.3.6
+    , warp ==3.3.14
+  default-language: Haskell2010

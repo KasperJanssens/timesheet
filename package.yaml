@@ -1,0 +1,82 @@
+name:                timesheet-server
+version:             0.1.0.0
+github:              "githubuser/timesheet-server"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2021 Author name here"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/timesheet-server#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- text == 1.2.4.1
+- aeson == 1.5.6.0
+- aeson-casing == 0.2.0.0
+- aeson-pretty == 0.8.8
+- bytestring == 0.10.12.0
+- mtl == 2.2.2
+- containers == 0.6.2.1
+- servant == 0.18.2
+- servant-server == 0.18.2
+- servant-client == 0.18.2
+- transformers == 0.5.6.2
+- stm == 2.5.0.0
+- warp == 3.3.14
+- safe == 0.3.19
+- http-types == 0.12.3
+- wai == 3.2.3
+- wai-cors == 0.2.7
+- wai-extra == 3.1.6
+- wai-logger== 2.3.6
+- hspec == 2.7.8
+- either == 5.0.1.1
+- port-utils == 0.2.1.0
+- http-client == 0.6.4.1
+- uuid == 1.3.14
+- time == 1.9.3
+- text-builder == 0.6.6.2
+- safe == 0.3.19
+- persistent == 2.11.0.4
+- persistent-template == 2.9.1.0
+- persistent-postgresql == 2.11.0.1
+- monad-logger == 0.3.36
+- resourcet == 1.2.4.2
+- resource-pool == 0.2.3.2
+- string-interpolate == 0.3.1.0
+
+library:
+  source-dirs: src
+
+executables:
+  timesheet-server-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - timesheet-server
+
+tests:
+  timesheet-server-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - timesheet-server
