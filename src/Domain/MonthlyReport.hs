@@ -19,26 +19,30 @@ import           Safe               (headMay)
 standaardTarief :: Double
 standaardTarief = 75.0
 
-data VATReport = VATReport {
-  totalExcl  :: Double
-  , totalVAT :: Double
-  , total    :: Double} deriving (FromJSON, ToJSON, Generic, Eq, Show)
+data VATReport = VATReport
+  { totalExcl :: Double,
+    totalVAT  :: Double,
+    total     :: Double
+  }
+  deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
-data ReportEntry = ReportEntry {
-  omschrijving :: Text
-  , aantalUur  :: Double
-  } deriving (FromJSON, ToJSON, Generic, Eq, Show)
+data ReportEntry = ReportEntry
+  { omschrijving :: Text,
+    aantalUur    :: Double
+  }
+  deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
-data MonthlyReport = MonthlyReport {
-  id              :: SpecificMonth
-  , totalDays     :: Double
-  , reportEntries :: [ReportEntry]
-  , vatReport     :: VATReport
-  , month         :: Text
-  , invoiceNumber :: Text
-  , dayOfInvoice  :: Text
-  , dayOfPayment  :: Text
-  } deriving (FromJSON, ToJSON, Generic, Eq, Show)
+data MonthlyReport = MonthlyReport
+  { id            :: SpecificMonth,
+    totalDays     :: Double,
+    reportEntries :: [ReportEntry],
+    vatReport     :: VATReport,
+    month         :: Text,
+    invoiceNumber :: Text,
+    dayOfInvoice  :: Text,
+    dayOfPayment  :: Text
+  }
+  deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
 calculateTotalDays :: [ReportEntry] -> Double
 calculateTotalDays reportEntries = List.sum (aantalUur <$> reportEntries) / 8
@@ -67,7 +71,7 @@ createEntries workPacks =
    in trace ("grouped workpacks " ++ show groupedWorkPacks) $ createEntry <$> groupedWorkPacks
 
 toMonthlyReport :: Day -> SpecificMonth -> [Daily] -> MonthlyReport
-toMonthlyReport today  specificMonth@(SpecificMonth y  m)  dailies =
+toMonthlyReport today specificMonth@(SpecificMonth y m) dailies =
   let ws = concat $ workpacks <$> dailies
    in let entries = createEntries ws
        in let totalDays = calculateTotalDays entries

@@ -26,7 +26,7 @@ import           Database.Persist.TH
 import           Domain.Company
 
 share
-  [mkPersist sqlSettings, mkMigrate "migrateCompanies"]
+  [mkPersist sqlSettings, mkMigrate "migrateCompany"]
   [persistLowerCase|
 CompanyRecord
     name Text
@@ -34,10 +34,10 @@ CompanyRecord
     address Text
     bankAccountNumber Text
     currentLastInvoiceFollowUpNumber Int Maybe
+    currentLastQuoteFollowUpNumber Int Maybe
     UniqueCompanyVAT vatNumber
     deriving Show
 |]
-
 
 allCompanies :: [Filter CompanyRecord]
 allCompanies = []
@@ -46,10 +46,10 @@ countCompanies :: MonadIO m => ReaderT SqlBackend m Int
 countCompanies = count allCompanies
 
 to :: CompanyRecord -> Company
-to (CompanyRecord n v a b c) = Company n v a b c
+to (CompanyRecord n v a b c q) = Company n v a b c q
 
 from :: Company -> CompanyRecord
-from (Company n v a b c) = CompanyRecord n v a b c
+from (Company n v a b c q) = CompanyRecord n v a b c q
 
 getCompany :: MonadIO m => Text -> ReaderT SqlBackend m (Maybe Company)
 getCompany vatNumber = do
@@ -85,4 +85,14 @@ nextNumber vatNumber = do
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastInvoiceFollowUpNumber $ entityVal companyEntity
   update (entityKey companyEntity) [CompanyRecordCurrentLastInvoiceFollowUpNumber =. Just nextNumber]
+  return nextNumber
+
+nextQuoteNumber :: MonadIO m => Text -> ReaderT SqlBackend m Int
+nextQuoteNumber vatNumber = do
+  maybeCompanyEntity <- getBy (UniqueCompanyVAT vatNumber)
+  -- TODO no from just, remove this
+  let companyEntity = fromJust maybeCompanyEntity
+  time <- liftIO getCurrentTime
+  let nextNumber = upWithNumber time $ companyRecordCurrentLastQuoteFollowUpNumber $ entityVal companyEntity
+  update (entityKey companyEntity) [CompanyRecordCurrentLastQuoteFollowUpNumber =. Just nextNumber]
   return nextNumber

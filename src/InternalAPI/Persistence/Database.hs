@@ -4,31 +4,35 @@
 
 module InternalAPI.Persistence.Database where
 
-import           Control.Monad                              (when)
-import           Control.Monad.IO.Class                     (MonadIO, liftIO)
-import           Control.Monad.Logger                       (NoLoggingT,
-                                                             runStdoutLoggingT)
-import           Control.Monad.Logger.CallStack             (runStderrLoggingT)
-import           Control.Monad.Reader                       (ReaderT,
-                                                             runReaderT)
-import           Control.Monad.Trans.Resource               (ResourceT)
-import           Data.ByteString.Char8                      (ByteString)
-import           Data.Pool                                  (Pool)
-import           Data.String.Interpolate                    (i)
-import           Data.Text                                  (Text)
-import qualified Data.Text                                  as Text
-import           Database.Persist                           (BackendCompatible)
-import           Database.Persist.Postgresql                (ConnectionString,
-                                                             PersistValue (..),
-                                                             Single (..),
-                                                             SqlBackend,
-                                                             liftSqlPersistMPool,
-                                                             rawExecute, rawSql,
-                                                             runMigration,
-                                                             withPostgresqlConn,
-                                                             withPostgresqlPool)
+import           Control.Monad                                       (when)
+import           Control.Monad.IO.Class                              (MonadIO,
+                                                                      liftIO)
+import           Control.Monad.Logger                                (NoLoggingT,
+                                                                      runStdoutLoggingT)
+import           Control.Monad.Logger.CallStack                      (runStderrLoggingT)
+import           Control.Monad.Reader                                (ReaderT,
+                                                                      runReaderT)
+import           Control.Monad.Trans.Resource                        (ResourceT)
+import           Data.ByteString.Char8                               (ByteString)
+import           Data.Pool                                           (Pool)
+import           Data.String.Interpolate                             (i)
+import           Data.Text                                           (Text)
+import qualified Data.Text                                           as Text
+import           Database.Persist                                    (BackendCompatible)
+import           Database.Persist.Postgresql                         (ConnectionString,
+                                                                      PersistValue (..),
+                                                                      Single (..),
+                                                                      SqlBackend,
+                                                                      liftSqlPersistMPool,
+                                                                      rawExecute,
+                                                                      rawSql,
+                                                                      runMigration,
+                                                                      withPostgresqlConn,
+                                                                      withPostgresqlPool)
+import           InternalAPI.Persistence.CompanyRepository
 import           InternalAPI.Persistence.CustomerRepository
 import           InternalAPI.Persistence.DailyRepository
+import           InternalAPI.Persistence.FixedPriceInvoiceRepository
 import           InternalAPI.Persistence.InvoiceRepository
 
 conn :: Text -> Text -> Text -> Text -> Int -> ConnectionString
@@ -55,27 +59,36 @@ executeInPool = flip liftSqlPersistMPool
 
 provisionalCreateDatabase :: DatabaselessConnString -> IO ()
 provisionalCreateDatabase connectionString =
-  runStdoutLoggingT $ withPostgresqlConn connectionString $ \backend ->
-    runReaderT
-      ( do
-          existsL <- retrieveDatabase
-          when (null existsL) $ do
-            res <- createDatabase
-            liftIO $ print res
-      )
-      backend
+  runStdoutLoggingT $
+    withPostgresqlConn connectionString $ \backend ->
+      runReaderT
+        ( do
+            existsL <- retrieveDatabase
+            when (null existsL) $ do
+              res <- createDatabase
+              liftIO $ print res
+        )
+        backend
 
 migrate :: ConnectionString -> IO ()
-migrate connectionString = runStderrLoggingT $ withPostgresqlPool connectionString 10 $ liftSqlPersistMPool $ do
-  runMigration migrateCustomer
-  runMigration migrateDaily
-  runMigration migrateInvoice
+migrate connectionString = runStderrLoggingT $
+  withPostgresqlPool connectionString 10 $
+    liftSqlPersistMPool $ do
+      runMigration migrateCustomer
+      runMigration migrateCompany
+      runMigration migrateDaily
+      runMigration migrateInvoice
+      runMigration migrateFixedPriceInvoice
 
 truncateTable :: MonadIO m => Text -> ReaderT SqlBackend m ()
 truncateTable tableName = rawExecute (Text.intercalate " " ["truncate table", tableName, "CASCADE"]) []
 
 truncateAll :: ConnectionString -> IO ()
-truncateAll connString =  runStderrLoggingT $ withPostgresqlPool connString 10 $ liftSqlPersistMPool $  do
-  truncateTable "customer_record"
-  truncateTable "daily_record"
-  truncateTable "invoice_record"
+truncateAll connString = runStderrLoggingT $
+  withPostgresqlPool connString 10 $
+    liftSqlPersistMPool $ do
+      truncateTable "customer_record"
+      truncateTable "daily_record"
+      truncateTable "invoice_record"
+      truncateTable "company_record"
+      truncateTable "fixed_price_invoice_record"

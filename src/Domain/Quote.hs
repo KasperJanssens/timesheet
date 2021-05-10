@@ -1,24 +1,21 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Domain.FixedPriceInvoice where
+module Domain.Quote where
 
 import           Data.Aeson           (FromJSON, ToJSON)
 import           Data.Text            (Text)
 import           Data.UUID            (UUID)
 import           Domain.Company       (Company)
 import           Domain.Customer      (Customer)
-import           Domain.Monthly
-import           Domain.MonthlyReport (MonthlyReport, VATReport)
+import           Domain.MonthlyReport (VATReport)
 import           GHC.Generics         (Generic)
 
-data FixedPriceInvoice = FixedPriceInvoice
-  { id           :: UUID,
-    invoiceId    :: Text,
-    vatReport    :: VATReport,
-    customer     :: Customer,
-    company      :: Company,
-    dayOfInvoice :: Text,
-    dayOfPayment :: Text
+data Quote = Quote
+  { id        :: UUID,
+    quoteId   :: Text,
+    vatReport :: VATReport,
+    customer  :: Customer,
+    company   :: Company
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

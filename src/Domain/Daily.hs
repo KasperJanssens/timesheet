@@ -13,6 +13,15 @@ data WorkType = EDU | TEAM | MEET | INFO | TECHDESI | FUNCDESI | IMPL deriving (
 allWorkTypes :: [WorkType]
 allWorkTypes = enumFrom minBound
 
-data WorkPack = WorkPack {amount :: Double, workType :: WorkType, description :: Text} deriving (FromJSON, ToJSON, Generic, Show, Eq)
+data WorkPack = WorkPack
+  { amount      :: Double,
+    workType    :: WorkType,
+    description :: Text
+  }
+  deriving (FromJSON, ToJSON, Generic, Show, Eq)
 
-data Daily = Daily {day :: Day, workpacks :: [WorkPack]} deriving (FromJSON, ToJSON, Generic, Show, Eq)
+data Daily = Daily
+  { day       :: Day,
+    workpacks :: [WorkPack]
+  }
+  deriving (FromJSON, ToJSON, Generic, Show, Eq)

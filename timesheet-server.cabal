@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c65bf718663f54bc64e1669893c44670003ba659aa4d6c1a455fba84f61cbac1
+-- hash: 460798f0d951b94e6bd73c9d543ff9574338d58c551b77da10edb931d43d0196
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -31,9 +31,11 @@ library
       Application.CustomerService
       Application.DailyService
       Application.Environment
+      Application.FixedPriceInvoiceService
       Application.InvoiceService
       Application.MapUtil
       Application.MonthlyService
+      Application.QuoteService
       Application.ServiceClass
       Domain.Company
       Domain.Customer
@@ -42,12 +44,15 @@ library
       Domain.Invoice
       Domain.Monthly
       Domain.MonthlyReport
+      Domain.Quote
       ExternalAPI.ApiType
       ExternalAPI.FrontEndTypes.DailyJson
       ExternalAPI.FrontEndTypes.MonthlyListJson
       ExternalAPI.NewTypes.NewCustomer
       ExternalAPI.NewTypes.NewDaily
+      ExternalAPI.NewTypes.NewFixedPriceInvoice
       ExternalAPI.NewTypes.NewInvoice
+      ExternalAPI.NewTypes.NewQuote
       ExternalAPI.Server
       ExternalAPI.WorkTypeJson
       InternalAPI.Persistence.BusinessId
@@ -57,6 +62,7 @@ library
       InternalAPI.Persistence.Database
       InternalAPI.Persistence.FixedPriceInvoiceRepository
       InternalAPI.Persistence.InvoiceRepository
+      InternalAPI.Persistence.QuoteRepository
       SmallDPProblemn
   other-modules:
       Paths_timesheet_server

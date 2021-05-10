@@ -8,4 +8,8 @@ import           Data.Time    (Day)
 import           Domain.Daily
 import           GHC.Generics (Generic)
 
-data NewDaily = NewDaily {day ::Day, workpacks :: [WorkPack]} deriving (FromJSON, ToJSON, Generic)
+data NewDaily = NewDaily
+  { day       :: Day,
+    workpacks :: [WorkPack]
+  }
+  deriving (FromJSON, ToJSON, Generic)

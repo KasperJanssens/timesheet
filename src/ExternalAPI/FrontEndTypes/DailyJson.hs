@@ -14,4 +14,9 @@ toDaily (DailyJson _ d w) = Daily d w
 fromDaily :: Daily -> DailyJson
 fromDaily (Daily d w) = DailyJson d d w
 
-data DailyJson = DailyJson {id :: Day, day :: Day, workpacks :: [WorkPack]} deriving (FromJSON, ToJSON, Generic, Show, Eq)
+data DailyJson = DailyJson
+  { id        :: Day,
+    day       :: Day,
+    workpacks :: [WorkPack]
+  }
+  deriving (FromJSON, ToJSON, Generic, Show, Eq)

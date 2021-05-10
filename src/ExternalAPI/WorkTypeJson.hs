@@ -7,4 +7,8 @@ import           Data.Aeson   (FromJSON, ToJSON)
 import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
-data WorkTypeJson = WorkTypeJson {id :: Text, name :: Text} deriving (FromJSON, ToJSON, Generic, Show)
+data WorkTypeJson = WorkTypeJson
+  { id   :: Text,
+    name :: Text
+  }
+  deriving (FromJSON, ToJSON, Generic, Show)
