@@ -45,7 +45,7 @@ FixedPriceInvoiceRecord
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     invoiceFollowUpNumber Int
-    UniqueBusinessId businessId
+    UniqueFixedPriceBusinessId businessId
     deriving Show
 |]
 
@@ -79,7 +79,7 @@ toFixedPriceInvoice (FixedPriceInvoiceRecord (BusinessId id) totalExcl today pay
 
 getFixedPriceInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe FixedPriceInvoice)
 getFixedPriceInvoice uuid = do
-  maybeEntity <- getBy (UniqueBusinessId (BusinessId uuid))
+  maybeEntity <- getBy (UniqueFixedPriceBusinessId (BusinessId uuid))
   maybe
     (return Nothing)
     ( \fixedPriceInvoiceRecordEntity -> do

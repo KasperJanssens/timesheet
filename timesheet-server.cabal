@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2427669b68b381440918c155f282a733f3b81785250fca932c77428aceee6f05
+-- hash: 955bf4f67a9e3569e0e5826e80db75b0bed557351ae38fc3bb4931bfc42d47bd
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -157,6 +157,7 @@ test-suite timesheet-server-test
       Application.FixedPriceInvoiceSpec
       Application.InvoiceServiceSpec
       Application.QuoteServiceSpec
+      Application.QuoteUseCaseSpec
       ExternalAPI.MonthlyReportSpec
       Helper.DatabaseHelper
       InternalAPI.Persistence.CustomerRepositorySpec

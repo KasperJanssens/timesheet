@@ -12,6 +12,13 @@ import qualified InternalAPI.Persistence.Database        as DB
 import qualified InternalAPI.Persistence.QuoteRepository as QuoteRepository
 import           Numeric.Natural                         (Natural)
 
+listNonInvoiced :: AppM [Quote]
+listNonInvoiced = do
+  pool <- asks poel
+  DB.executeInPool pool $ do
+    QuoteRepository.listNonInvoiced
+    
+    
 list :: Natural -> Natural -> AppM (Int, [Quote])
 list from to = do
   pool <- asks poel
