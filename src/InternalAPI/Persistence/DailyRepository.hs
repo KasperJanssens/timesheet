@@ -16,6 +16,7 @@ module InternalAPI.Persistence.DailyRepository where
 
 import           Control.Applicative
 import           Control.Exception.Base                     (throw)
+import           Control.Monad                              (foldM)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
 import qualified Data.List                                  as List
@@ -38,7 +39,6 @@ import           InternalAPI.Persistence.CompanyRepository  hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import           Safe                                       (headMay)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
-import Control.Monad (foldM)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateDaily"]
@@ -150,7 +150,7 @@ yearAndMonth maybeRecord = do
 distinctMonthsAndYears :: [[DailyRecord]] -> [Maybe (Int, Int, CustomerRecordId, CompanyRecordId)]
 distinctMonthsAndYears groupedRecords = (\rs -> let hMaybe = headMay rs in yearAndMonth hMaybe) <$> groupedRecords
 
-fetchCompanyAndCustomer::(MonadIO m) => CustomerRecordId -> CompanyRecordId -> ReaderT SqlBackend m (CustomerRecord, CompanyRecord)
+fetchCompanyAndCustomer :: (MonadIO m) => CustomerRecordId -> CompanyRecordId -> ReaderT SqlBackend m (CustomerRecord, CompanyRecord)
 fetchCompanyAndCustomer customerRecordId companyRecordId = do
   maybeCustomerRecord <- get customerRecordId
   maybeCompanyRecord <- get companyRecordId
@@ -160,12 +160,25 @@ allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int, Custo
 allMonthsWithWorkedDays = do
   entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
   let records = entityVal <$> entities
-  let groupedRecords = List.groupBy (\left right -> dailyRecordMonthNumber left == dailyRecordMonthNumber right && dailyRecordYear left == dailyRecordYear right && customerLink left == customerLink right && customerLink left == customerLink right) records
+  let groupedRecords =
+        List.groupBy
+          ( \left right ->
+              dailyRecordMonthNumber left == dailyRecordMonthNumber right
+                && dailyRecordYear left == dailyRecordYear right
+                && dailyRecordCustomerLink left == dailyRecordCustomerLink right
+                && dailyRecordCustomerLink left == dailyRecordCustomerLink right
+          )
+          records
   let distinctMonths = distinctMonthsAndYears groupedRecords
   let res = catMaybes distinctMonths
-  foldM (\acc elem@(m, y, customerRecordId, companyRecordId) -> do
-     (customer, company) <- fetchCompanyAndCustomer customerRecordId companyRecordId
-     return $ acc ++ [(m, y, customer, company)]) [] res
+  foldM
+    ( \acc elem@(m, y, customerRecordId, companyRecordId) -> do
+        (customer, company) <- fetchCompanyAndCustomer customerRecordId companyRecordId
+        return $ acc ++ [(m, y, customer, company)]
+    )
+    []
+    res
+
 --  return res'
 
 allDailies :: [Filter DailyRecord]
