@@ -16,7 +16,7 @@ data Company = Company
     lastInvoiceNumber :: Maybe Int,
     lastQuoteNumber   :: Maybe Int
   }
-  deriving (FromJSON, ToJSON, Generic, Eq, Show)
+  deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
 
 dummy :: Company
 dummy = Company "Propellant" "BE0767397088" "OGS 354" "Ievrs op een bank" Nothing Nothing

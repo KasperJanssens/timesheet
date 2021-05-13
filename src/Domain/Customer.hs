@@ -11,7 +11,7 @@ import           GHC.Generics    (Generic)
 import           Numeric.Natural (Natural)
 
 --  TODO make this better add validations
-data VATNumber = VATNumber Text deriving (FromJSON, ToJSON, Generic, Eq, Show)
+data VATNumber = VATNumber Text deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
 
 --TODO no need of id, vat number should be unique enough. Fix this
 data Customer = Customer
@@ -21,4 +21,4 @@ data Customer = Customer
     hourlyRate  :: Maybe Double,
     paymentTerm :: Int
   }
-  deriving (FromJSON, ToJSON, Generic, Eq, Show)
+  deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)

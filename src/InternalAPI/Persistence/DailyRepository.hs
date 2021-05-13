@@ -38,6 +38,7 @@ import           InternalAPI.Persistence.CompanyRepository  hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import           Safe                                       (headMay)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
+import Control.Monad (foldM)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateDaily"]
@@ -141,21 +142,31 @@ insertDaily (Daily uuid day workPacks customerId companyVat) = do
   insertMany_ workPackRecords
   return dailyRecordId
 
-yearAndMonth :: Maybe DailyRecord -> Maybe (Int, Int)
+yearAndMonth :: Maybe DailyRecord -> Maybe (Int, Int, CustomerRecordId, CompanyRecordId)
 yearAndMonth maybeRecord = do
   r <- maybeRecord
-  return (dailyRecordMonthNumber r, dailyRecordYear r)
+  return (dailyRecordMonthNumber r, dailyRecordYear r, dailyRecordCustomerLink r, dailyRecordCompanyLink r)
 
-distinctMonthsAndYears :: [[DailyRecord]] -> [Maybe (Int, Int)]
+distinctMonthsAndYears :: [[DailyRecord]] -> [Maybe (Int, Int, CustomerRecordId, CompanyRecordId)]
 distinctMonthsAndYears groupedRecords = (\rs -> let hMaybe = headMay rs in yearAndMonth hMaybe) <$> groupedRecords
 
-allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int)]
+fetchCompanyAndCustomer::(MonadIO m) => CustomerRecordId -> CompanyRecordId -> ReaderT SqlBackend m (CustomerRecord, CompanyRecord)
+fetchCompanyAndCustomer customerRecordId companyRecordId = do
+  maybeCustomerRecord <- get customerRecordId
+  maybeCompanyRecord <- get companyRecordId
+  return (fromJust maybeCustomerRecord, fromJust maybeCompanyRecord)
+
+allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int, CustomerRecord, CompanyRecord)]
 allMonthsWithWorkedDays = do
   entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
   let records = entityVal <$> entities
   let groupedRecords = List.groupBy (\left right -> dailyRecordMonthNumber left == dailyRecordMonthNumber right && dailyRecordYear left == dailyRecordYear right) records
   let distinctMonths = distinctMonthsAndYears groupedRecords
-  return $ catMaybes distinctMonths
+  let res = catMaybes distinctMonths
+  foldM (\acc elem@(m, y, customerRecordId, companyRecordId) -> do
+     (customer, company) <- fetchCompanyAndCustomer customerRecordId companyRecordId
+     return $ acc ++ [(m, y, customer, company)]) [] res
+--  return res'
 
 allDailies :: [Filter DailyRecord]
 allDailies = []

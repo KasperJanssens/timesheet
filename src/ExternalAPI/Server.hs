@@ -148,7 +148,7 @@ serveWorkTypes = listWorkType
 
 listMonthlies :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [MonthlyListJson])
 listMonthlies (Just start) (Just end) = do
-  allMonthsWithOneDay <- MonthlyService.selectMonthsWithAtLeastOneDay
+  allMonthsWithOneDay <- MonthlyService.selectMonthsWithUninvoicedWork
   let selection = take (fromEnum $ end - start) . drop (fromEnum start) $ allMonthsWithOneDay
   return $ addHeader (length allMonthsWithOneDay) $ from <$> selection
 
