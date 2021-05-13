@@ -160,7 +160,7 @@ allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int, Custo
 allMonthsWithWorkedDays = do
   entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
   let records = entityVal <$> entities
-  let groupedRecords = List.groupBy (\left right -> dailyRecordMonthNumber left == dailyRecordMonthNumber right && dailyRecordYear left == dailyRecordYear right) records
+  let groupedRecords = List.groupBy (\left right -> dailyRecordMonthNumber left == dailyRecordMonthNumber right && dailyRecordYear left == dailyRecordYear right && customerLink left == customerLink right && customerLink left == customerLink right) records
   let distinctMonths = distinctMonthsAndYears groupedRecords
   let res = catMaybes distinctMonths
   foldM (\acc elem@(m, y, customerRecordId, companyRecordId) -> do
