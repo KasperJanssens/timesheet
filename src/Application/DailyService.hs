@@ -7,6 +7,7 @@ import           Control.Monad.Trans.Reader              (asks)
 import           Data.Text                               (Text)
 import           Data.Time                               (Day)
 import           Data.UUID                               (UUID)
+import qualified Data.UUID.V4 as UUID
 import           Database.Persist.Postgresql             (ConnectionString,
                                                           withPostgresqlPool)
 import           Domain.Daily                            (Daily (..))
@@ -15,6 +16,7 @@ import           ExternalAPI.NewTypes.NewDaily           (NewDaily (..))
 import qualified InternalAPI.Persistence.DailyRepository as DailyRepository
 import qualified InternalAPI.Persistence.Database        as DB
 import           Numeric.Natural                         (Natural)
+import Control.Monad.IO.Class (liftIO)
 
 list :: Natural -> Natural -> AppM (Int, [Daily])
 list from to = do
@@ -25,20 +27,20 @@ list from to = do
       total <- DailyRepository.countDailies
       return (total, dailies)
 
-get :: UUID -> Text -> Day -> AppM (Maybe Daily)
-get companyId customerVat day = do
+get :: UUID -> AppM (Maybe Daily)
+get dailyId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      DailyRepository.findByDay day companyId customerVat
+      DailyRepository.findByDay dailyId
 
-delete :: UUID -> Text -> Day -> AppM (Maybe Daily)
-delete companyId customerVat day = do
+delete :: UUID -> AppM (Maybe Daily)
+delete dailyId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      maybeDay <- DailyRepository.findByDay day companyId customerVat
-      DailyRepository.deleteDaily day companyId customerVat
+      maybeDay <- DailyRepository.findByDay dailyId
+      DailyRepository.deleteDaily dailyId
       return maybeDay
 
 getAllForMonth :: UUID -> Text -> SpecificMonth -> AppM [Daily]
@@ -52,7 +54,8 @@ getAllForMonth companyId customerVat (SpecificMonth y m) = do
 insert :: NewDaily -> AppM Daily
 insert (NewDaily d wps cId cVat) = do
   pool <- asks poel
-  let daily = Daily d wps cId cVat
+  uuid <- liftIO UUID.nextRandom
+  let daily = Daily uuid d wps cId cVat
   void $
     DB.executeInPool pool $
       do

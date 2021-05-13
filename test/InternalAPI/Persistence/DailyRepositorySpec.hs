@@ -19,6 +19,7 @@ import           ExternalAPI.NewTypes.NewCustomer
 import           Helper.DatabaseHelper
 import qualified InternalAPI.Persistence.DailyRepository as DailyRecord
 import           Test.Hspec
+import qualified Data.UUID.V4 as UUID
 
 spec :: Spec
 spec = around withDatabase $
@@ -33,9 +34,10 @@ spec = around withDatabase $
         company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
         return (Customer.id customer, Company.vatNumber company)
       let (customerId, companyVatNumber) = fromRight undefined resOrErr
-      let daily = Daily day [] customerId companyVatNumber
+      uuid <- UUID.nextRandom
+      let daily = Daily uuid day [] customerId companyVatNumber
       recordId <- runWithoutPool connString $ DailyRecord.insertDaily daily
-      maybeRes <- runWithoutPool connString $ DailyRecord.findByDay day customerId companyVatNumber
+      maybeRes <- runWithoutPool connString $ DailyRecord.findByDay uuid
 
       maybeRes `shouldSatisfy` isJust
       maybeRes `shouldBe` Just daily
@@ -44,12 +46,12 @@ spec = around withDatabase $
 
       length dailiesAfterInsert `shouldBe` length dailiesBefore + 1
 
-      runWithoutPool connString $ DailyRecord.deleteDaily day customerId companyVatNumber
+      runWithoutPool connString $ DailyRecord.deleteDaily uuid
 
       dailiesAfterDelete <- runWithoutPool connString $ DailyRecord.getDailies 0 10
 
       length dailiesAfterDelete `shouldBe` length dailiesBefore
 
-      shouldBeDeleted <- runWithoutPool connString $ DailyRecord.findByDay day customerId companyVatNumber
+      shouldBeDeleted <- runWithoutPool connString $ DailyRecord.findByDay uuid
 
       shouldBeDeleted `shouldSatisfy` null

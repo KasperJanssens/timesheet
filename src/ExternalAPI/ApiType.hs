@@ -26,8 +26,8 @@ type XTotalCountHeader v = Headers '[Header "X-Total-Count" Int] v
 type DailyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [DailyJson])
     :<|> ReqBody '[JSON] NewDaily :> Post '[JSON] DailyJson
-    :<|> Capture "id" DailyId :> Delete '[JSON] DailyJson
-    :<|> Capture "id" DailyId :> Get '[JSON] DailyJson
+    :<|> Capture "id" UUID :> Delete '[JSON] DailyJson
+    :<|> Capture "id" UUID :> Get '[JSON] DailyJson
 
 type WorkTypeApi =
   Get '[JSON] (XTotalCountHeader [WorkTypeJson])

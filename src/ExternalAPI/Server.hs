@@ -98,22 +98,23 @@ listDaily (Just start) (Just end) = do
   return $ addHeader total $ fromDaily <$> dailies
 listDaily _ _ = throwError $ err404 {errBody = "listing needs to provide a start and end"}
 
-deleteDaily :: DailyId -> AppM DailyJson
-deleteDaily (DailyId day cId cVat) = do
-  maybeRes <- DailyService.delete cId cVat day
+deleteDaily :: UUID -> AppM DailyJson
+deleteDaily dailyId = do
+  maybeRes <- DailyService.delete dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
-getDaily :: DailyId -> AppM DailyJson
-getDaily (DailyId day cId cVat) = do
-  maybeRes <- DailyService.get cId cVat day
+getDaily :: UUID -> AppM DailyJson
+getDaily dailyId = do
+  maybeRes <- DailyService.get dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
 insertDailyWithGuard :: NewDaily -> AppM DailyJson
 insertDailyWithGuard newDaily@(NewDaily d _ cId cVat) = do
-  maybeDaily <- DailyService.get cId cVat d
-  if isJust maybeDaily
-    then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
-    else do
+--  TODO Do this better
+--  maybeDaily <- DailyService.get cId cVat d
+--  if isJust maybeDaily
+--    then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
+--    else do
       daily <- DailyService.insert newDaily
       return $ fromDaily daily
 

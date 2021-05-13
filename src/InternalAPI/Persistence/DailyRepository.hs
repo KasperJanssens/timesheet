@@ -49,6 +49,7 @@ WorkPackRecord
     dailyLink DailyRecordId
     deriving Show
 DailyRecord
+    businessId BusinessId
     day Day
     creationDate UTCTime
     monthNumber Int
@@ -56,6 +57,7 @@ DailyRecord
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     UniqueDay day companyLink customerLink
+    UniqueDailyBusinessId businessId
     deriving Show
 |]
 
@@ -65,13 +67,13 @@ toWorkPack (WorkPackRecord a t d _) = WorkPack a (read t) d
 fromWorkPack :: Key DailyRecord -> WorkPack -> WorkPackRecord
 fromWorkPack dailyRecordId (WorkPack a t d) = WorkPackRecord a (show t) d dailyRecordId
 
-toDaily :: UUID -> Text -> [WorkPack] -> Day -> Daily
-toDaily customerId companyVat workPacks d = Daily d workPacks customerId companyVat
+toDaily :: UUID -> UUID -> Text -> [WorkPack] -> Day -> Daily
+toDaily dailyId customerId companyVat workPacks d = Daily dailyId d workPacks customerId companyVat
 
 to :: CustomerRecord -> CompanyRecord -> [WorkPackRecord] -> DailyRecord -> Daily
 to customerRecord companyRecord workPackRecords dailyRecord =
   let workPacks = toWorkPack <$> workPackRecords
-   in toDaily (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord)
+   in toDaily (uuid $ dailyRecordBusinessId dailyRecord) (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord)
 
 workPacksForMonth :: (MonadIO m) => UUID -> Text -> Integer -> Int -> ReaderT SqlBackend m [Daily]
 workPacksForMonth customerId companyVat year month = do
@@ -102,32 +104,36 @@ createDayUniqueConstraint day customerId companyVat = do
   maybeCompany <- getBy (UniqueCompanyVAT companyVat)
   return $ liftA2 (UniqueDay day) (entityKey <$> maybeCompany) (entityKey <$> maybeCustomer)
 
-findByDay :: (MonadIO m) => Day -> UUID -> Text -> ReaderT SqlBackend m (Maybe Daily)
-findByDay day customerId companyVat = do
+findByDay :: (MonadIO m) => UUID -> ReaderT SqlBackend m (Maybe Daily)
+findByDay dailyId = do
   --  Get rid of the fromJust
-  maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
-  maybeCompany <- getBy (UniqueCompanyVAT companyVat)
-  let customerRecord = fromJust maybeCustomer
-  let companyRecord = fromJust maybeCompany
-  let uniqueConstraint = UniqueDay day (entityKey companyRecord) (entityKey customerRecord)
+  --  maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
+  --  maybeCompany <- getBy (UniqueCompanyVAT companyVat)
+  --  let customerRecord = fromJust maybeCustomer
+  --  let companyRecord = fromJust maybeCompany
+  --  let uniqueConstraint = UniqueDay day (entityKey companyRecord) (entityKey customerRecord)
   --  maybeUniqueConstraint <- createDayUniqueConstraint day customerId companyVat
   --  TODO can we do this better? Looks a bit annoying, but there is no liftMaybe or so
-  maybeDaily <- getBy uniqueConstraint
+  maybeDaily <- getBy (UniqueDailyBusinessId $ BusinessId dailyId)
   maybe
     (return Nothing)
     ( \dailyEntity -> do
-        daily <- addWorkPacks dailyEntity (entityVal companyRecord) (entityVal customerRecord)
+        maybeCustomer <- get (dailyRecordCustomerLink $ entityVal dailyEntity)
+        maybeCompany <- get (dailyRecordCompanyLink $ entityVal dailyEntity)
+        let customerRecord = fromJust maybeCustomer
+        let companyRecord = fromJust maybeCompany
+        daily <- addWorkPacks dailyEntity companyRecord customerRecord
         return $ Just daily
     )
     maybeDaily
 
 insertDaily :: (MonadIO m) => Daily -> ReaderT SqlBackend m DailyRecordId
-insertDaily (Daily day workPacks customerId companyVat) = do
+insertDaily (Daily uuid day workPacks customerId companyVat) = do
   now <- liftIO getCurrentTime
   let (year, month, _) = toGregorian day
   maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
   maybeCompany <- getBy (UniqueCompanyVAT companyVat)
-  let maybeDailyRecord = liftA2 (DailyRecord day now month (fromIntegral year)) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
+  let maybeDailyRecord = liftA2 (DailyRecord (BusinessId uuid) day now month (fromIntegral year)) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
   --  TODO this needs to be better
   let dailyRecord = fromJust maybeDailyRecord
   dailyRecordId <- insert dailyRecord
@@ -184,20 +190,6 @@ getDailies start stop = do
   let daList = zip3 records companies customers
   mapM (uncurry3 addWorkPacks) daList
 
-deleteDaily :: (MonadIO m) => Day -> UUID -> Text -> ReaderT SqlBackend m ()
-deleteDaily day customerId companyVat = do
-  maybeUniqueConstraint <- createDayUniqueConstraint day customerId companyVat
-  --  TODO can we do this better? Looks a bit annoying, but there is no liftMaybe or so. ALso lots of duplication with the get
-  maybeDailyEntity <-
-    maybe
-      (return Nothing)
-      getBy
-      maybeUniqueConstraint
-  maybe
-    (pure ())
-    ( \dailyEntity -> do
-        let dailyRecordId = entityKey dailyEntity
-        deleteWhere [WorkPackRecordDailyLink ==. dailyRecordId]
-        delete dailyRecordId
-    )
-    maybeDailyEntity
+deleteDaily :: (MonadIO m) => UUID -> ReaderT SqlBackend m ()
+deleteDaily uuid = do
+  deleteBy (UniqueDailyBusinessId (BusinessId uuid))

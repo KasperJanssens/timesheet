@@ -21,7 +21,7 @@ import qualified InternalAPI.Persistence.DailyRepository as DailyRepository
 import qualified InternalAPI.Persistence.Database        as DB
 
 updateMonthlyMap :: Daily -> MonthlyMap -> ((), MonthlyMap)
-updateMonthlyMap daily@(Daily day _ _ _) map =
+updateMonthlyMap daily@(Daily _ day _ _ _) map =
   let (year, monthOfYear, _) = toJulian day
    in let updatedMap = Map.insertWith merge (SpecificMonth year monthOfYear) (Monthly.create year monthOfYear daily) map
        in ((), updatedMap)

@@ -16,10 +16,10 @@ import           GHC.Generics         (Generic)
 import           Servant.API          (FromHttpApiData (..))
 
 toDaily :: DailyJson -> Daily
-toDaily (DailyJson (DailyId _ cId cVat) d w) = Daily d w cId cVat
+toDaily (DailyJson i d w cId cVat) = Daily i d w cId cVat
 
 fromDaily :: Daily -> DailyJson
-fromDaily (Daily d w cId cVat) = DailyJson (DailyId d cId cVat) d w
+fromDaily (Daily i d w cId cVat) = DailyJson i d w cId cVat
 
 data DailyId = DailyId
   { dayId      :: Day,
@@ -32,8 +32,10 @@ instance FromHttpApiData DailyId where
   parseUrlPiece t = first Text.pack $ eitherDecode' $ BSLazy.fromStrict $ TextEnc.encodeUtf8 t
 
 data DailyJson = DailyJson
-  { dailyId   :: DailyId,
-    day       :: Day,
-    workpacks :: [WorkPack]
+  { id          :: UUID,
+    day         :: Day,
+    workpacks   :: [WorkPack],
+    cId         :: UUID,
+    companyName :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)
