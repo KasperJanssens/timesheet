@@ -1,27 +1,28 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Application.FixedPriceInvoiceService where
 
 import qualified Application.CustomerService                         as CustomerService
-import qualified Application.DailyService                            as DailyService
 import           Application.Environment                             (AppM,
                                                                       poel)
-import qualified Application.MonthlyService                          as MonthlyService
+import qualified Application.QuoteService                            as QuoteService
+import           Control.Exception.Base                              (throw)
 import           Control.Monad.Cont                                  (liftIO)
 import           Control.Monad.RWS.Class                             (asks)
-import           Data.Bits                                           (shiftR)
 import           Data.Maybe                                          (fromJust)
 import           Data.Time
-import           Data.Time.Calendar.OrdinalDate                      (toOrdinalDate)
 import           Data.UUID                                           (UUID)
-import           Domain.Customer
-import           Domain.Daily                                        (workpacks)
+import qualified Domain.Company                                      as Company
+import qualified Domain.Customer                                     as Customer
 import           Domain.FixedPriceInvoice
-import           Domain.Invoice
-import           Domain.Monthly
 import           Domain.MonthlyReport
+import           Domain.Quote
 import           ExternalAPI.NewTypes.NewFixedPriceInvoice
 import qualified InternalAPI.Persistence.Database                    as DB
 import           InternalAPI.Persistence.FixedPriceInvoiceRepository as FixedPriceInvoiceRepository
 import           Numeric.Natural
+import           Servant.Server.Internal.ServerError                 (err404,
+                                                                      errBody)
 
 list :: Natural -> Natural -> AppM (Int, [FixedPriceInvoice])
 list from to = do
@@ -36,6 +37,10 @@ get specificUUID = do
   pool <- asks poel
   DB.executeInPool pool $ FixedPriceInvoiceRepository.getFixedPriceInvoice specificUUID
 
+fromQuote :: Quote -> NewFixedPriceInvoice
+fromQuote (Quote _ _ (VATReport total _ _) customer company) =
+  NewFixedPriceInvoice total (Customer.id customer) (Company.vatNumber company)
+
 insert :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
 insert (NewFixedPriceInvoice total customerId companyId) = do
   maybeCustomer <- CustomerService.get customerId
@@ -45,3 +50,9 @@ insert (NewFixedPriceInvoice total customerId companyId) = do
     let today = utctDay time
     let paymentDay = CustomerService.determinePaymentDate' today (fromJust maybeCustomer)
     FixedPriceInvoiceRepository.insertFixedPriceInvoice customerId companyId today paymentDay total
+
+insertFromQuote :: UUID -> AppM FixedPriceInvoice
+insertFromQuote quoteId = do
+  maybeQuote <- QuoteService.get quoteId
+  quote <- maybe (throw (err404 {errBody = "quote not found"})) return maybeQuote
+  insert (fromQuote quote)

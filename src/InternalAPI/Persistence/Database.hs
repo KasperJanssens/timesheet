@@ -34,6 +34,7 @@ import           InternalAPI.Persistence.CustomerRepository
 import           InternalAPI.Persistence.DailyRepository
 import           InternalAPI.Persistence.FixedPriceInvoiceRepository
 import           InternalAPI.Persistence.InvoiceRepository
+import           InternalAPI.Persistence.QuoteRepository
 
 conn :: Text -> Text -> Text -> Text -> Int -> ConnectionString
 conn host databaseName userName password port = [i|host=#{host} dbname=#{databaseName} user=#{userName} password=#{password} port=#{port}|]
@@ -78,6 +79,7 @@ migrate connectionString = runStderrLoggingT $
       runMigration migrateCompany
       runMigration migrateDaily
       runMigration migrateInvoice
+      runMigration migrateQuote
       runMigration migrateFixedPriceInvoice
 
 truncateTable :: MonadIO m => Text -> ReaderT SqlBackend m ()
@@ -92,3 +94,4 @@ truncateAll connString = runStderrLoggingT $
       truncateTable "invoice_record"
       truncateTable "company_record"
       truncateTable "fixed_price_invoice_record"
+      truncateTable "quote_record"

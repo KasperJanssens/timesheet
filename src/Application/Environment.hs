@@ -23,7 +23,10 @@ type MonthlyMap = Map SpecificMonth Monthly
 
 type CustomerMap = InMemStore Customer
 
-data State = State {monthlyMap :: TVar MonthlyMap,  poel :: Pool SqlBackend}
+data State = State
+  { monthlyMap :: TVar MonthlyMap,
+    poel       :: Pool SqlBackend
+  }
 
 class InEnvironment env where
   fetchInMemStore :: State -> TVar (InMemStore env)

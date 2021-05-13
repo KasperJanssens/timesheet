@@ -13,6 +13,7 @@ import           Numeric.Natural (Natural)
 --  TODO make this better add validations
 data VATNumber = VATNumber Text deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
+--TODO no need of id, vat number should be unique enough. Fix this
 data Customer = Customer
   { id          :: UUID,
     name        :: Text,

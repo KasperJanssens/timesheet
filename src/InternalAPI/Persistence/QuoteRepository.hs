@@ -41,7 +41,7 @@ QuoteRecord
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     quoteFollowUpNumber Int
-    UniqueBusinessId businessId
+    UniqueQuoteBusinessId businessId
     deriving Show
 |]
 
@@ -73,7 +73,7 @@ toQuote (QuoteRecord (BusinessId id) totalExcl _ _ quoteId) = toQuote' id quoteI
 
 getQuote :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Quote)
 getQuote uuid = do
-  maybeEntity <- getBy (UniqueBusinessId (BusinessId uuid))
+  maybeEntity <- getBy (UniqueQuoteBusinessId (BusinessId uuid))
   maybe
     (return Nothing)
     ( \quoteRecordEntity -> do

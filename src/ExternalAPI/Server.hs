@@ -98,19 +98,19 @@ listDaily (Just start) (Just end) = do
   return $ addHeader total $ fromDaily <$> dailies
 listDaily _ _ = throwError $ err404 {errBody = "listing needs to provide a start and end"}
 
-deleteDaily :: Day -> AppM DailyJson
-deleteDaily day = do
-  maybeRes <- DailyService.delete day
+deleteDaily :: DailyId -> AppM DailyJson
+deleteDaily (DailyId day cId cVat) = do
+  maybeRes <- DailyService.delete cId cVat day
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
-getDaily :: Day -> AppM DailyJson
-getDaily day = do
-  maybeRes <- DailyService.get day
+getDaily :: DailyId -> AppM DailyJson
+getDaily (DailyId day cId cVat) = do
+  maybeRes <- DailyService.get cId cVat day
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
 insertDailyWithGuard :: NewDaily -> AppM DailyJson
-insertDailyWithGuard newDaily@(NewDaily d _) = do
-  maybeDaily <- DailyService.get d
+insertDailyWithGuard newDaily@(NewDaily d _ cId cVat) = do
+  maybeDaily <- DailyService.get cId cVat d
   if isJust maybeDaily
     then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
     else do
@@ -153,10 +153,10 @@ listMonthlies (Just start) (Just end) = do
 
 listInvoices :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Invoice])
 listInvoices (Just start) (Just end) = do
-   (t, invoices) <- InvoiceService.list start end
-   liftIO $ print t
-   liftIO $ print invoices
-   return $ addHeader t invoices
+  (t, invoices) <- InvoiceService.list start end
+  liftIO $ print t
+  liftIO $ print invoices
+  return $ addHeader t invoices
 
 createInvoice :: NewInvoice -> AppM Invoice
 createInvoice = InvoiceService.insert
@@ -166,11 +166,11 @@ getInvoice sMonth = do
   maybeInvoice <- InvoiceService.get sMonth
   maybe (throwError $ err404 {errBody = "Could not find invoice"}) return maybeInvoice
 
-getMonthly :: SpecificMonth -> AppM MonthlyReport
-getMonthly = MonthlyService.getReport
+--getMonthly :: SpecificMonth -> AppM MonthlyReport
+--getMonthly = MonthlyService.getReport
 
 serveMonthlyApi :: ServerT MonthlyApi AppM
-serveMonthlyApi = listMonthlies :<|> getMonthly
+serveMonthlyApi = listMonthlies
 
 serveInvoiceApi :: ServerT InvoiceApi AppM
 serveInvoiceApi = listInvoices :<|> createInvoice :<|> getInvoice

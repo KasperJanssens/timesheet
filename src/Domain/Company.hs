@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Domain.Company where
 
@@ -13,6 +14,9 @@ data Company = Company
     address           :: Text,
     bankAccountNumber :: Text,
     lastInvoiceNumber :: Maybe Int,
-    lastQuoteNumber :: Maybe Int
+    lastQuoteNumber   :: Maybe Int
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)
+
+dummy :: Company
+dummy = Company "Propellant" "BE0767397088" "OGS 354" "Ievrs op een bank" Nothing Nothing

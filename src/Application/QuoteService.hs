@@ -1,16 +1,16 @@
 module Application.QuoteService where
 
 import           Application.Environment
+import           Control.Monad.Cont                      (liftIO)
+import           Control.Monad.RWS.Class                 (asks)
+import           Data.Time.Clock                         (utctDay)
+import           Data.Time.Clock.POSIX                   (getCurrentTime)
 import           Data.UUID                               (UUID)
 import           Domain.Quote
 import           ExternalAPI.NewTypes.NewQuote
 import qualified InternalAPI.Persistence.Database        as DB
 import qualified InternalAPI.Persistence.QuoteRepository as QuoteRepository
 import           Numeric.Natural                         (Natural)
-import Control.Monad.RWS.Class (asks)
-import Control.Monad.Cont (liftIO)
-import Data.Time.Clock.POSIX (getCurrentTime)
-import Data.Time.Clock (utctDay)
 
 list :: Natural -> Natural -> AppM (Int, [Quote])
 list from to = do

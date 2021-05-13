@@ -10,7 +10,9 @@ import           Control.Monad.Cont               (void)
 import           Data.Either                      (fromRight, isRight)
 import           Data.Time.Calendar               (fromGregorian)
 import           Domain.Company
+import qualified Domain.Company                   as Company
 import           Domain.Customer
+import qualified Domain.Customer                  as Customer
 import           Domain.Daily
 import qualified Domain.Invoice                   as Invoice
 import           Domain.Monthly
@@ -42,13 +44,13 @@ spec = around withDatabase $
     it "should find an invoice, with monthly report" $ \connString -> do
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [WorkPack 7.0 IMPL "Jos"])
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [WorkPack 5.0 IMPL "Jos"])
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [WorkPack 6.0 IMPL "Jos"])
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [WorkPack 6.0 FUNCDESI "Smos"])
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
-        let customerId = Domain.Customer.id customer
         company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [WorkPack 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [WorkPack 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [WorkPack 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [WorkPack 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
+        let customerId = Domain.Customer.id customer
         let vatNumber = Domain.Company.vatNumber company
         InvoiceService.insert (NewInvoice (SpecificMonth 2021 5) customerId vatNumber)
       invoiceOrErr `shouldSatisfy` isRight

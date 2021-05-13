@@ -26,15 +26,15 @@ type XTotalCountHeader v = Headers '[Header "X-Total-Count" Int] v
 type DailyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [DailyJson])
     :<|> ReqBody '[JSON] NewDaily :> Post '[JSON] DailyJson
-    :<|> Capture "id" Day :> Delete '[JSON] DailyJson
-    :<|> Capture "id" Day :> Get '[JSON] DailyJson
+    :<|> Capture "id" DailyId :> Delete '[JSON] DailyJson
+    :<|> Capture "id" DailyId :> Get '[JSON] DailyJson
 
 type WorkTypeApi =
   Get '[JSON] (XTotalCountHeader [WorkTypeJson])
 
 type MonthlyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [MonthlyListJson])
-    :<|> Capture "id" SpecificMonth :> Get '[JSON] MonthlyReport
+--    :<|> Capture "id" SpecificMonth :> Get '[JSON] MonthlyReport
 
 type CustomerApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Customer])

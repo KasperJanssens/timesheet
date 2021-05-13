@@ -1,8 +1,10 @@
+import qualified Application.FixedPriceInvoiceSpec              as FixedPriceInvoiceSpec
+import qualified Application.InvoiceServiceSpec                 as InvoiceServiceSpec
+import qualified Application.QuoteServiceSpec                   as QuoteServiceSpec
 import qualified ExternalAPI.MonthlyReportSpec                  as MonthlyReportSpec
 import qualified InternalAPI.Persistence.CustomerRepositorySpec as CustomerRecordSpec
 import qualified InternalAPI.Persistence.DailyRepositorySpec    as DailyRecordSpec
 import           Test.Hspec
-import qualified Application.InvoiceServiceSpec as InvoiceServiceSpec
 
 main :: IO ()
 main = hspec $ do
@@ -10,3 +12,5 @@ main = hspec $ do
   DailyRecordSpec.spec
   CustomerRecordSpec.spec
   InvoiceServiceSpec.spec
+  FixedPriceInvoiceSpec.spec
+  QuoteServiceSpec.spec
