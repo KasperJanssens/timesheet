@@ -33,7 +33,7 @@ updateMonthlyMap daily@(Daily _ day _ _ _) map =
 merge :: Monthly -> Monthly -> Monthly
 merge (Monthly i month newValue) (Monthly _ _ oldValue) = Monthly i month $ newValue ++ oldValue
 
-data UninvoicedWork = UninvoicedWork SpecificMonth Customer Company
+data UninvoicedWork = UninvoicedWork SpecificMonth Customer Company deriving (Show, Eq, Ord)
 
 selectMonthsWithUninvoicedWork :: AppM [UninvoicedWork]
 selectMonthsWithUninvoicedWork = do

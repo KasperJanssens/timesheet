@@ -16,7 +16,7 @@ module InternalAPI.Persistence.DailyRepository where
 
 import           Control.Applicative
 import           Control.Exception.Base                     (throw)
-import           Control.Monad                              (foldM)
+import           Control.Monad                              (foldM, forM, forM_)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
 import qualified Data.List                                  as List
@@ -37,6 +37,7 @@ import           Domain.Daily
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
 import           InternalAPI.Persistence.CompanyRepository  hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
+import           InternalAPI.Persistence.InvoiceRepository  (InvoiceRecordId, Unique (UniqueInvoiceBusinessId))
 import           Safe                                       (headMay)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
 
@@ -44,10 +45,13 @@ share
   [mkPersist sqlSettings, mkMigrate "migrateDaily"]
   [persistLowerCase|
 WorkPackRecord
+    businessId BusinessId
     amount Double
     workType String
     description Text
     dailyLink DailyRecordId
+    invoiceLink InvoiceRecordId Maybe
+    UniqueWorkPackBusinessId businessId
     deriving Show
 DailyRecord
     businessId BusinessId
@@ -63,10 +67,10 @@ DailyRecord
 |]
 
 toWorkPack :: WorkPackRecord -> WorkPack
-toWorkPack (WorkPackRecord a t d _) = WorkPack a (read t) d
+toWorkPack (WorkPackRecord (BusinessId bId) a t d _ _) = WorkPack bId a (read t) d
 
 fromWorkPack :: Key DailyRecord -> WorkPack -> WorkPackRecord
-fromWorkPack dailyRecordId (WorkPack a t d) = WorkPackRecord a (show t) d dailyRecordId
+fromWorkPack dailyRecordId (WorkPack bId a t d) = WorkPackRecord (BusinessId bId) a (show t) d dailyRecordId Nothing
 
 toDaily :: UUID -> UUID -> Text -> [WorkPack] -> Day -> Daily
 toDaily dailyId customerId companyVat workPacks d = Daily dailyId d workPacks customerId companyVat
@@ -156,9 +160,14 @@ fetchCompanyAndCustomer customerRecordId companyRecordId = do
   maybeCompanyRecord <- get companyRecordId
   return (fromJust maybeCustomerRecord, fromJust maybeCompanyRecord)
 
+selectMonthsWithUninvoicedWorkPacks :: (MonadIO m) => ReaderT SqlBackend m [Entity DailyRecord]
+selectMonthsWithUninvoicedWorkPacks = do
+  rawSql "select ?? from daily_record , work_pack_record  where work_pack_record.daily_link=daily_record.id and work_pack_record.invoice_link is null order by daily_record.year, daily_record.month_number desc" []
+
 allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int, CustomerRecord, CompanyRecord)]
 allMonthsWithWorkedDays = do
-  entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
+  entities <- selectMonthsWithUninvoicedWorkPacks
+  --  entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
   let records = entityVal <$> entities
   let groupedRecords =
         List.groupBy
@@ -178,8 +187,6 @@ allMonthsWithWorkedDays = do
     )
     []
     res
-
---  return res'
 
 allDailies :: [Filter DailyRecord]
 allDailies = []
@@ -217,3 +224,12 @@ getDailies start stop = do
 deleteDaily :: (MonadIO m) => UUID -> ReaderT SqlBackend m ()
 deleteDaily uuid = do
   deleteBy (UniqueDailyBusinessId (BusinessId uuid))
+
+linkInvoiceToWorkpacks :: (MonadIO m) => [WorkPack] -> UUID -> ReaderT SqlBackend m ()
+linkInvoiceToWorkpacks wps invoiceBusinessId = do
+  maybeInvoice <- getBy (UniqueInvoiceBusinessId (BusinessId invoiceBusinessId))
+  let invoiceRecordId = entityKey $ fromJust maybeInvoice
+  let workPackBIds = wpid <$> wps
+  maybeWorkPackRecordEntities <- mapM (getBy . UniqueWorkPackBusinessId . BusinessId) workPackBIds
+  let workPackRecordIds = entityKey <$> catMaybes maybeWorkPackRecordEntities
+  forM_ workPackRecordIds (\wpRecordId -> update wpRecordId [WorkPackRecordInvoiceLink =. Just invoiceRecordId])

@@ -13,6 +13,7 @@ import           Domain.MonthlyReport
 import           ExternalAPI.NewTypes.NewInvoice
 import qualified InternalAPI.Persistence.Database          as DB
 import           InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
+import           InternalAPI.Persistence.DailyRepository as DailyRepository
 import           Numeric.Natural
 
 list :: Natural -> Natural -> AppM (Int, [Invoice])
@@ -38,4 +39,6 @@ insert (NewInvoice specificMonth customerId companyId) = do
   let entries = createEntries ws
   pool <- asks poel
   DB.executeInPool pool $ do
-    InvoiceRepository.insertInvoice customerId companyId specificMonth entries today paymentDay
+    invoice <- InvoiceRepository.insertInvoice customerId companyId specificMonth entries today paymentDay
+    DailyRepository.linkInvoiceToWorkpacks ws (Domain.Invoice.id invoice)
+    return invoice

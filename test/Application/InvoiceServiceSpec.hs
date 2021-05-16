@@ -22,6 +22,8 @@ import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice
 import           Helper.DatabaseHelper
 import           Test.Hspec
+import qualified Data.UUID.V4 as UUID
+import Control.Monad.IO.Class (liftIO)
 
 spec :: Spec
 spec = around withDatabase $
@@ -36,7 +38,7 @@ spec = around withDatabase $
         InvoiceService.insert (NewInvoice (SpecificMonth 2021 5) customerId vatNumber)
       invoiceOrErr `shouldSatisfy` isRight
       let invoice = fromRight undefined invoiceOrErr
-      Invoice.id invoice `shouldBe` SpecificMonth 2021 5
+      Invoice.specificMonth invoice `shouldBe` SpecificMonth 2021 5
       Domain.Customer.name (Invoice.customer invoice) `shouldBe` "Jos"
       totalDays (Invoice.monthlyReport invoice) `shouldBe` 0.0
       reportEntries (Invoice.monthlyReport invoice) `shouldSatisfy` null
@@ -46,16 +48,20 @@ spec = around withDatabase $
       invoiceOrErr <- runAppM state $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
         company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [WorkPack 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [WorkPack 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [WorkPack 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [WorkPack 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
+        wp1 <- liftIO UUID.nextRandom
+        wp2 <- liftIO UUID.nextRandom
+        wp3 <- liftIO UUID.nextRandom
+        wp4 <- liftIO UUID.nextRandom
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [WorkPack wp1 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [WorkPack wp2 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [WorkPack wp3 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [WorkPack wp4 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
         let customerId = Domain.Customer.id customer
         let vatNumber = Domain.Company.vatNumber company
         InvoiceService.insert (NewInvoice (SpecificMonth 2021 5) customerId vatNumber)
       invoiceOrErr `shouldSatisfy` isRight
       let invoice = fromRight undefined invoiceOrErr
-      Invoice.id invoice `shouldBe` SpecificMonth 2021 5
+      Invoice.specificMonth invoice `shouldBe` SpecificMonth 2021 5
       Domain.Customer.name (Invoice.customer invoice) `shouldBe` "Jos"
       totalDays (Invoice.monthlyReport invoice) `shouldBe` 3.0
       reportEntries (Invoice.monthlyReport invoice) `shouldSatisfy` hasSize 2

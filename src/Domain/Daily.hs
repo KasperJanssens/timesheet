@@ -15,7 +15,8 @@ allWorkTypes :: [WorkType]
 allWorkTypes = enumFrom minBound
 
 data WorkPack = WorkPack
-  { amount      :: Double,
+  { wpid :: UUID,
+    amount      :: Double,
     workType    :: WorkType,
     description :: Text
   }

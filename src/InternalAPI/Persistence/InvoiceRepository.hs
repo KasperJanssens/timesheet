@@ -14,7 +14,7 @@
 module InternalAPI.Persistence.InvoiceRepository where
 
 import           Control.Monad                              (void)
-import           Control.Monad.IO.Class                     (MonadIO)
+import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
 import           Data.Maybe                                 (fromJust)
 import           Data.Text                                  (Text)
@@ -34,6 +34,7 @@ import           InternalAPI.Persistence.CompanyRepository hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
 import qualified InternalAPI.Persistence.CompanyRepository as CompanyRepository
+import qualified Data.UUID.V4 as UUID
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateInvoice"]
@@ -43,6 +44,7 @@ ReportEntryRecord
     hours Double
     invoiceLink InvoiceRecordId
 InvoiceRecord
+    businessId BusinessId
     monthNumber Int
     year Int
     dayOfInvoice Day
@@ -51,6 +53,7 @@ InvoiceRecord
     companyLink CompanyRecordId
     invoiceFollowUpNumber Int
     UniqueMonth monthNumber year
+    UniqueInvoiceBusinessId businessId
     deriving Show
 |]
 
@@ -63,9 +66,9 @@ allInvoices = []
 countInvoices :: MonadIO m => ReaderT SqlBackend m Int
 countInvoices = count allInvoices
 
-createInvoiceRecord :: CustomerRecordId -> CompanyRecordId -> SpecificMonth -> Int -> Day -> Day -> InvoiceRecord
-createInvoiceRecord customerRecordId companyRecordId (SpecificMonth y m) followUpNumber today paymentDay =
-  InvoiceRecord m (fromIntegral y) today paymentDay customerRecordId companyRecordId followUpNumber
+createInvoiceRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> SpecificMonth -> Int -> Day -> Day -> InvoiceRecord
+createInvoiceRecord businessId customerRecordId companyRecordId (SpecificMonth y m) followUpNumber today paymentDay =
+  InvoiceRecord (BusinessId businessId) m (fromIntegral y) today paymentDay customerRecordId companyRecordId followUpNumber
 
 createReportEntryRecord :: InvoiceRecordId -> ReportEntry -> ReportEntryRecord
 createReportEntryRecord invoiceRecordId (ReportEntry desc h) = ReportEntryRecord desc h invoiceRecordId
@@ -77,7 +80,7 @@ insertReports invoiceRecordId entries = do
   return records
 
 createMonthlyReport :: InvoiceRecord -> [ReportEntryRecord] -> CustomerRecord -> MonthlyReport
-createMonthlyReport (InvoiceRecord m y dayOfIn dayOfPay _ _ i) reportEntryRecords customerRecord =
+createMonthlyReport (InvoiceRecord _ m y dayOfIn dayOfPay _ _ i) reportEntryRecords customerRecord =
   let totalHours = (sum $ reportEntryRecordHours <$> reportEntryRecords)
    in let totalDays = totalHours / 8
        in --   TODO Handle this exception better.
@@ -95,10 +98,10 @@ createMonthlyReport (InvoiceRecord m y dayOfIn dayOfPay _ _ i) reportEntryRecord
                         (Text.pack . showGregorian $ dayOfPay)
 
 to :: [ReportEntryRecord] -> CustomerRecord -> CompanyRecord -> InvoiceRecord -> Invoice
-to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord m y dayOfIn dayOfPay _ _ i) =
+to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord (BusinessId businessId) m y dayOfIn dayOfPay _ _ i) =
   let customer = CustomerRepository.to customerRecord in
   let company = CompanyRepository.to companyRecord 
-   in Invoice (SpecificMonth (toInteger y) m) (createMonthlyReport invoiceRecord reportEntries customerRecord) customer company
+   in Invoice businessId (SpecificMonth (toInteger y) m) (createMonthlyReport invoiceRecord reportEntries customerRecord) customer company
 
 selectMaxFollowUpNumber :: (MonadIO m) => ReaderT SqlBackend m (Maybe Int)
 selectMaxFollowUpNumber = do
@@ -156,7 +159,8 @@ insertInvoice  customerId companyVat specificMonth entries today paymentDay = do
   let companyRecord = fromJust maybeCompany
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
-  let invoiceRecord = createInvoiceRecord customerRecordId companyRecordId specificMonth newFollowUpNumber today paymentDay
+  uuid <- liftIO UUID.nextRandom
+  let invoiceRecord = createInvoiceRecord uuid customerRecordId companyRecordId specificMonth newFollowUpNumber today paymentDay
   invoiceRecordId <- insert invoiceRecord
   reportRecords <- insertReports invoiceRecordId entries
   return $ to reportRecords (entityVal customerRecord) (entityVal companyRecord) invoiceRecord
