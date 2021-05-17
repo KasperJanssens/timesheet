@@ -6,14 +6,15 @@ import           Application.Environment                   (AppM, poel)
 import           Control.Monad.Cont                        (liftIO)
 import           Control.Monad.RWS.Class                   (asks)
 import           Data.Time
+import           Data.UUID                                 (UUID)
 import           Domain.Daily                              (workpacks)
 import           Domain.Invoice
 import           Domain.Monthly
 import           Domain.MonthlyReport
 import           ExternalAPI.NewTypes.NewInvoice
+import           InternalAPI.Persistence.DailyRepository   as DailyRepository
 import qualified InternalAPI.Persistence.Database          as DB
 import           InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
-import           InternalAPI.Persistence.DailyRepository as DailyRepository
 import           Numeric.Natural
 
 list :: Natural -> Natural -> AppM (Int, [Invoice])
@@ -24,10 +25,10 @@ list from to = do
     amount <- InvoiceRepository.countInvoices
     return (amount, invoices)
 
-get :: SpecificMonth -> AppM (Maybe Invoice)
-get specificMonth = do
+get :: UUID -> AppM (Maybe Invoice)
+get invoiceId = do
   pool <- asks poel
-  DB.executeInPool pool $ InvoiceRepository.getInvoice specificMonth
+  DB.executeInPool pool $ InvoiceRepository.getInvoice invoiceId
 
 insert :: NewInvoice -> AppM Invoice
 insert (NewInvoice specificMonth customerId companyId) = do

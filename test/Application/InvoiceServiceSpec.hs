@@ -7,8 +7,10 @@ import qualified Application.CustomerService      as CustomerService
 import qualified Application.DailyService         as DailyService
 import qualified Application.InvoiceService       as InvoiceService
 import           Control.Monad.Cont               (void)
+import           Control.Monad.IO.Class           (liftIO)
 import           Data.Either                      (fromRight, isRight)
 import           Data.Time.Calendar               (fromGregorian)
+import qualified Data.UUID.V4                     as UUID
 import           Domain.Company
 import qualified Domain.Company                   as Company
 import           Domain.Customer
@@ -17,13 +19,12 @@ import           Domain.Daily
 import qualified Domain.Invoice                   as Invoice
 import           Domain.Monthly
 import           Domain.MonthlyReport
+import           ExternalAPI.NewTypes.NewCompany
 import           ExternalAPI.NewTypes.NewCustomer
 import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice
 import           Helper.DatabaseHelper
 import           Test.Hspec
-import qualified Data.UUID.V4 as UUID
-import Control.Monad.IO.Class (liftIO)
 
 spec :: Spec
 spec = around withDatabase $
@@ -31,7 +32,7 @@ spec = around withDatabase $
     it "should find an invoice, without monthly report" $ \connString -> do
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
-        company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
         let customerId = Domain.Customer.id customer
         let vatNumber = Domain.Company.vatNumber company
@@ -47,15 +48,11 @@ spec = around withDatabase $
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
-        company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
-        wp1 <- liftIO UUID.nextRandom
-        wp2 <- liftIO UUID.nextRandom
-        wp3 <- liftIO UUID.nextRandom
-        wp4 <- liftIO UUID.nextRandom
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [WorkPack wp1 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [WorkPack wp2 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [WorkPack wp3 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
-        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [WorkPack wp4 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [NewWorkPack 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [NewWorkPack 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [NewWorkPack 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
+        void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [NewWorkPack 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
         let customerId = Domain.Customer.id customer
         let vatNumber = Domain.Company.vatNumber company
         InvoiceService.insert (NewInvoice (SpecificMonth 2021 5) customerId vatNumber)

@@ -2,21 +2,22 @@ module Application.DailyService where
 
 import           Application.Environment
 import           Control.Monad                           (void)
+import           Control.Monad.IO.Class                  (liftIO)
 import           Control.Monad.Logger                    (runStderrLoggingT)
 import           Control.Monad.Trans.Reader              (asks)
 import           Data.Text                               (Text)
 import           Data.Time                               (Day)
 import           Data.UUID                               (UUID)
-import qualified Data.UUID.V4 as UUID
+import qualified Data.UUID.V4                            as UUID
 import           Database.Persist.Postgresql             (ConnectionString,
                                                           withPostgresqlPool)
-import           Domain.Daily                            (Daily (..))
+import           Domain.Daily                            (Daily (..), WorkPack (..))
 import           Domain.Monthly                          (SpecificMonth (..))
+import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewDaily           (NewDaily (..))
 import qualified InternalAPI.Persistence.DailyRepository as DailyRepository
 import qualified InternalAPI.Persistence.Database        as DB
 import           Numeric.Natural                         (Natural)
-import Control.Monad.IO.Class (liftIO)
 
 list :: Natural -> Natural -> AppM (Int, [Daily])
 list from to = do
@@ -52,9 +53,16 @@ getAllForMonth companyId customerVat (SpecificMonth y m) = do
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
 insert :: NewDaily -> AppM Daily
-insert (NewDaily d wps cId cVat) = do
+insert (NewDaily d newWps cId cVat) = do
   pool <- asks poel
   uuid <- liftIO UUID.nextRandom
+  wps <-
+    mapM
+      ( \(NewWorkPack a w d) -> do
+          uuid <- liftIO UUID.nextRandom
+          return $ WorkPack uuid a w d
+      )
+      newWps
   let daily = Daily uuid d wps cId cVat
   void $
     DB.executeInPool pool $

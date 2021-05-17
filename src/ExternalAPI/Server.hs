@@ -11,6 +11,7 @@
 module ExternalAPI.Server where
 
 import qualified Application.CustomerService               as CustomerService
+import qualified Application.CompanyService               as CompanyService
 import qualified Application.DailyService                  as DailyService
 import           Application.Environment
 import qualified Application.InvoiceService                as InvoiceService
@@ -35,6 +36,7 @@ import           Database.Persist.Postgresql               (ConnectionString,
                                                             createPostgresqlPool)
 import           Debug.Trace
 import           Domain.Customer                           (Customer)
+import           Domain.Company                           (Company)
 import           Domain.Daily                              (allWorkTypes)
 import           Domain.Invoice                            (Invoice)
 import           Domain.Monthly
@@ -44,6 +46,7 @@ import           ExternalAPI.FrontEndTypes.DailyJson
 import           ExternalAPI.FrontEndTypes.MonthlyListJson (MonthlyListJson,
                                                             from)
 import           ExternalAPI.NewTypes.NewCustomer
+import           ExternalAPI.NewTypes.NewCompany
 import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice           (NewInvoice (..))
 import           ExternalAPI.WorkTypeJson
@@ -122,7 +125,9 @@ listCustomer :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Custo
 listCustomer (Just start) (Just end) = do
   (total, customers) <- CustomerService.list start end
   return $ addHeader total customers
-listCustomer _ _ = throwError $ err404 {errBody = "listing needs to provide a start and end"}
+listCustomer _ _ = do
+  allCustomers <- CustomerService.listAll
+  return $ addHeader (length allCustomers) allCustomers
 
 deleteCustomer :: UUID -> AppM Customer
 deleteCustomer businessId = do
@@ -143,6 +148,27 @@ serveDaily = listDaily :<|> insertDailyWithGuard :<|> deleteDaily :<|> getDaily
 serveCustomerApi :: ServerT CustomerApi AppM
 serveCustomerApi = listCustomer :<|> insertCustomer :<|> getCustomer
 
+listCompany :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Company])
+listCompany (Just start) (Just end) = do
+  (total, companies) <- CompanyService.list start end
+  return $ addHeader total companies
+listCompany _ _ =  do
+  allCompanies <- CompanyService.listAll
+  return $ addHeader (length allCompanies) allCompanies
+
+getCompany :: UUID -> AppM Company
+getCompany businessId = do
+  maybeRes <- CompanyService.get businessId
+  maybe (throwError $ err404 {errBody = "Could not find input id"}) return maybeRes
+
+insertCompany :: NewCompany -> AppM Company
+insertCompany = CompanyService.insert
+
+
+serveCompanyApi :: ServerT CompanyApi AppM
+serveCompanyApi = listCompany :<|> insertCompany :<|> getCompany
+
+
 serveWorkTypes :: ServerT WorkTypeApi AppM
 serveWorkTypes = listWorkType
 
@@ -162,9 +188,9 @@ listInvoices (Just start) (Just end) = do
 createInvoice :: NewInvoice -> AppM Invoice
 createInvoice = InvoiceService.insert
 
-getInvoice :: SpecificMonth -> AppM Invoice
-getInvoice sMonth = do
-  maybeInvoice <- InvoiceService.get sMonth
+getInvoice :: UUID -> AppM Invoice
+getInvoice invoiceId = do
+  maybeInvoice <- InvoiceService.get invoiceId
   maybe (throwError $ err404 {errBody = "Could not find invoice"}) return maybeInvoice
 
 --getMonthly :: SpecificMonth -> AppM MonthlyReport
@@ -178,7 +204,7 @@ serveInvoiceApi = listInvoices :<|> createInvoice :<|> getInvoice
 
 server :: String -> ServerT WebApi AppM
 server webAppLocation =
-  serveDaily :<|> serveWorkTypes :<|> serveMonthlyApi :<|> serveCustomerApi :<|> serveInvoiceApi
+  serveDaily :<|> serveWorkTypes :<|> serveMonthlyApi :<|> serveCustomerApi :<|> serveInvoiceApi :<|> serveCompanyApi
 
 corsConfig :: Middleware
 corsConfig = cors (const $ Just policy)

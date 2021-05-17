@@ -10,6 +10,7 @@ import qualified Domain.Company                       as Company
 import qualified Domain.Customer                      as Customer
 import qualified Domain.Quote                         as Quote
 import qualified ExternalAPI.NewTypes.NewCustomer     as NewCustomer
+import qualified ExternalAPI.NewTypes.NewCompany     as NewCompany
 import           ExternalAPI.NewTypes.NewQuote
 import           Helper.DatabaseHelper
 import           Test.Hspec
@@ -22,7 +23,7 @@ spec = around withDatabase $
       void $
         runAppM state $ do
           customer <- CustomerService.insert NewCustomer.dummy
-          company <- CompanyService.insert Company.dummy
+          company <- CompanyService.insert NewCompany.dummy
           quote1 <- QuoteService.insert (NewQuote 100 (Customer.id customer) (Company.vatNumber company))
           quote2 <- QuoteService.insert (NewQuote 200 (Customer.id customer) (Company.vatNumber company))
           quote3 <- QuoteService.insert (NewQuote 300 (Customer.id customer) (Company.vatNumber company))

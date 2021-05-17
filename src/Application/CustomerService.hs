@@ -16,7 +16,7 @@ import           Database.Persist.Postgresql                (ConnectionString,
 import           Domain.Customer
 import           ExternalAPI.NewTypes.NewCustomer           (NewCustomer (..))
 import           InternalAPI.Persistence.BusinessId
-import qualified InternalAPI.Persistence.CustomerRepository as CustomerDatabase
+import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
 import qualified InternalAPI.Persistence.Database           as DB
 import           Numeric.Natural                            (Natural)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
@@ -34,8 +34,8 @@ list from to = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      dailies <- CustomerDatabase.getCustomers (fromEnum from) (fromEnum to)
-      total <- CustomerDatabase.countCustomers
+      dailies <- CustomerRepository.getCustomers (fromEnum from) (fromEnum to)
+      total <- CustomerRepository.countCustomers
       return (total, dailies)
 
 get :: UUID -> AppM (Maybe Customer)
@@ -43,15 +43,15 @@ get businessId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      CustomerDatabase.findByBusinessId $ BusinessId businessId
+      CustomerRepository.findByBusinessId $ BusinessId businessId
 
 delete :: UUID -> AppM (Maybe Customer)
 delete businessId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      maybeDay <- CustomerDatabase.findByBusinessId $ BusinessId businessId
-      CustomerDatabase.deleteCustomer $ BusinessId businessId
+      maybeDay <- CustomerRepository.findByBusinessId $ BusinessId businessId
+      CustomerRepository.deleteCustomer $ BusinessId businessId
       return maybeDay
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
@@ -63,6 +63,11 @@ insert (NewCustomer n vat h paymentTerm) = do
   void $
     DB.executeInPool pool $
       do
-        CustomerDatabase.insertCustomer customer
+        CustomerRepository.insertCustomer customer
 
   return customer
+
+listAll :: AppM [Customer]
+listAll = do
+  pool <- asks poel
+  DB.executeInPool pool CustomerRepository.getAllCustomers

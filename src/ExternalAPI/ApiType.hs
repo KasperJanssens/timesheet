@@ -8,6 +8,7 @@ import           Data.Text                                 (Text)
 import           Data.Time                                 (Day)
 import           Data.UUID                                 (UUID)
 import           Domain.Customer
+import           Domain.Company
 import           Domain.Daily
 import           Domain.Invoice
 import           Domain.Monthly
@@ -15,6 +16,7 @@ import           ExternalAPI.FrontEndTypes.DailyJson
 import           ExternalAPI.FrontEndTypes.MonthlyListJson
 import           Domain.MonthlyReport
 import           ExternalAPI.NewTypes.NewCustomer
+import           ExternalAPI.NewTypes.NewCompany
 import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice
 import           ExternalAPI.WorkTypeJson
@@ -41,9 +43,14 @@ type CustomerApi =
     :<|> ReqBody '[JSON] NewCustomer :> Post '[JSON] Customer
     :<|> Capture "id" UUID :> Get '[JSON] Customer
 
+type CompanyApi =
+  QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Company])
+    :<|> ReqBody '[JSON] NewCompany :> Post '[JSON] Company
+    :<|> Capture "id" UUID :> Get '[JSON] Company
+
 type InvoiceApi =   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Invoice])
     :<|> ReqBody '[JSON] NewInvoice :> Post '[JSON] Invoice
-    :<|> Capture "id" SpecificMonth :> Get '[JSON] Invoice
+    :<|> Capture "id" UUID :> Get '[JSON] Invoice
 
 
 type WebApi =
@@ -52,6 +59,7 @@ type WebApi =
     :<|> "v1" :> "monthly" :> MonthlyApi
     :<|> "v1" :> "customer" :> CustomerApi
     :<|> "v1" :> "invoice" :> InvoiceApi
+    :<|> "v1" :> "company" :> CompanyApi
 
 api :: Proxy WebApi
 api = Proxy

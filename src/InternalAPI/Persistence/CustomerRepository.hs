@@ -39,17 +39,16 @@ CustomerRecord
 |]
 
 from :: UTCTime -> Customer -> CustomerRecord
-from now (Customer  id name (VATNumber vat) hourly paymentTerm) = CustomerRecord (BusinessId id) name vat  hourly now paymentTerm 
+from now (Customer id name (VATNumber vat) hourly paymentTerm) = CustomerRecord (BusinessId id) name vat hourly now paymentTerm
 
 to :: CustomerRecord -> Customer
-to (CustomerRecord businessId name vatNumber hourlyRate _ paymentTerm ) = Customer (coerce businessId) name (VATNumber vatNumber) hourlyRate paymentTerm 
+to (CustomerRecord businessId name vatNumber hourlyRate _ paymentTerm) = Customer (coerce businessId) name (VATNumber vatNumber) hourlyRate paymentTerm
 
 allCustomers :: [Filter CustomerRecord]
 allCustomers = []
 
 countCustomers :: MonadIO m => ReaderT SqlBackend m Int
 countCustomers = count allCustomers
-
 
 findByBusinessId :: (MonadIO m) => BusinessId -> ReaderT SqlBackend m (Maybe Customer)
 findByBusinessId businessId = do
@@ -64,8 +63,13 @@ insertCustomer customer = do
 
 getCustomers :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Customer]
 getCustomers start stop = do
- records <- selectList [] [Asc CustomerRecordCreationDate, OffsetBy start, LimitTo (stop - start)]
- return $ to . entityVal <$> records
+  records <- selectList [] [Asc CustomerRecordCreationDate, OffsetBy start, LimitTo (stop - start)]
+  return $ to . entityVal <$> records
+
+getAllCustomers :: MonadIO m => ReaderT SqlBackend m [Customer]
+getAllCustomers = do
+  records <- selectList [] [Desc CustomerRecordCreationDate]
+  return $ map (to . entityVal) records
 
 deleteCustomer :: MonadIO m => BusinessId -> ReaderT SqlBackend m ()
 deleteCustomer businessId = do

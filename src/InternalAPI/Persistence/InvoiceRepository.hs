@@ -52,7 +52,7 @@ InvoiceRecord
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     invoiceFollowUpNumber Int
-    UniqueMonth monthNumber year
+    UniqueMonth monthNumber year customerLink companyLink
     UniqueInvoiceBusinessId businessId
     deriving Show
 |]
@@ -133,9 +133,9 @@ fetchDependencies invoiceRecordEntity = do
   reportEntryRecords <- fetchReportEntryRecords invoiceRecordEntity
   return $ to reportEntryRecords customerRecord companyRecord (entityVal invoiceRecordEntity)
 
-getInvoice :: MonadIO m => SpecificMonth -> ReaderT SqlBackend m (Maybe Invoice)
-getInvoice (SpecificMonth y m) = do
-  maybeEntity <- getBy (UniqueMonth m (fromIntegral y))
+getInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Invoice)
+getInvoice invoiceId = do
+  maybeEntity <- getBy (UniqueInvoiceBusinessId (BusinessId invoiceId))
   maybe
     (return Nothing)
     ( \entity -> do

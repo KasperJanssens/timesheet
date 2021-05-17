@@ -2,17 +2,14 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Domain.Company where
+module ExternalAPI.NewTypes.NewCompany where
 
 import           Data.Aeson   (FromJSON, ToJSON)
 import           Data.Text    (Text)
-import           Data.UUID    (UUID)
-import qualified Data.UUID.V4 as UUID
 import           GHC.Generics (Generic)
 
-data Company = Company
-  { id                :: UUID,
-    name              :: Text,
+data NewCompany = NewCompany
+  { name              :: Text,
     vatNumber         :: Text,
     address           :: Text,
     bankAccountNumber :: Text,
@@ -21,3 +18,5 @@ data Company = Company
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
 
+dummy :: NewCompany
+dummy = NewCompany "Propellant" "BE0767397088" "OGS 354" "Ievrs op een bank" Nothing Nothing

@@ -4,6 +4,7 @@ import qualified Application.InvoiceServiceSpec                 as InvoiceServic
 import qualified Application.QuoteServiceSpec                   as QuoteServiceSpec
 import qualified Application.QuoteUseCaseSpec                   as QuoteUseCaseSpec
 import qualified ExternalAPI.MonthlyReportSpec                  as MonthlyReportSpec
+import qualified InternalAPI.Persistence.CompanyRepositorySpec  as CompanyRepositorySpec
 import qualified InternalAPI.Persistence.CustomerRepositorySpec as CustomerRecordSpec
 import qualified InternalAPI.Persistence.DailyRepositorySpec    as DailyRecordSpec
 import           Test.Hspec
@@ -18,3 +19,4 @@ main = hspec $ do
   QuoteServiceSpec.spec
   QuoteUseCaseSpec.spec
   HourlyRateUseCaseSpec.spec
+  CompanyRepositorySpec.unitSpec

@@ -13,22 +13,26 @@
 
 module InternalAPI.Persistence.CompanyRepository where
 
-import           Control.Monad                  (void)
-import           Control.Monad.Reader           (MonadIO, ReaderT, liftIO)
-import           Data.Bits                      (shiftR)
-import           Data.Maybe                     (fromJust)
-import           Data.Text                      (Text)
-import           Data.Time.Calendar.OrdinalDate (toOrdinalDate)
-import           Data.Time.Clock                (UTCTime, getCurrentTime,
-                                                 utctDay)
+import           Control.Monad                      (void)
+import           Control.Monad.Reader               (MonadIO, ReaderT, liftIO)
+import           Data.Bits                          (shiftR)
+import           Data.Maybe                         (fromJust)
+import           Data.Text                          (Text)
+import           Data.Time.Calendar.OrdinalDate     (toOrdinalDate)
+import           Data.Time.Clock                    (UTCTime, getCurrentTime,
+                                                     utctDay)
+import           Data.UUID                          (UUID)
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Company
+import           ExternalAPI.NewTypes.NewCompany
+import           InternalAPI.Persistence.BusinessId
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateCompany"]
   [persistLowerCase|
 CompanyRecord
+    businessId BusinessId
     name Text
     vatNumber Text
     address Text
@@ -36,6 +40,7 @@ CompanyRecord
     currentLastInvoiceFollowUpNumber Int Maybe
     currentLastQuoteFollowUpNumber Int Maybe
     UniqueCompanyVAT vatNumber
+    UniqueCompanyBusinessId businessId
     deriving Show
 |]
 
@@ -46,14 +51,19 @@ countCompanies :: MonadIO m => ReaderT SqlBackend m Int
 countCompanies = count allCompanies
 
 to :: CompanyRecord -> Company
-to (CompanyRecord n v a b c q) = Company n v a b c q
+to (CompanyRecord (BusinessId uuid) n v a b c q) = Company uuid n v a b c q
 
-from :: Company -> CompanyRecord
-from (Company n v a b c q) = CompanyRecord n v a b c q
+from :: UUID -> NewCompany -> CompanyRecord
+from uuid (NewCompany n v a b c q) = CompanyRecord (BusinessId uuid) n v a b c q
 
-getCompany :: MonadIO m => Text -> ReaderT SqlBackend m (Maybe Company)
-getCompany vatNumber = do
+getCompanyByVat :: MonadIO m => Text -> ReaderT SqlBackend m (Maybe Company)
+getCompanyByVat vatNumber = do
   companyEntity <- getBy (UniqueCompanyVAT vatNumber)
+  return $ to . entityVal <$> companyEntity
+
+getCompany :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Company)
+getCompany businessId = do
+  companyEntity <- getBy (UniqueCompanyBusinessId (BusinessId businessId))
   return $ to . entityVal <$> companyEntity
 
 getCompanies :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Company]
@@ -61,17 +71,22 @@ getCompanies start stop = do
   records <- selectList [] [Desc CompanyRecordVatNumber, OffsetBy start, LimitTo (stop - start)]
   return $ map (to . entityVal) records
 
-insertCompany :: MonadIO m => Company -> ReaderT SqlBackend m Company
-insertCompany company = do
-  void $ insert (from company)
-  return company
+getAllCompanies :: MonadIO m => ReaderT SqlBackend m [Company]
+getAllCompanies = do
+  records <- selectList [] [Desc CompanyRecordVatNumber]
+  return $ map (to . entityVal) records
+
+insertCompany :: MonadIO m => UUID -> NewCompany -> ReaderT SqlBackend m Company
+insertCompany uuid newCompany@(NewCompany n v a b c q) = do
+  void $ insert (from uuid newCompany)
+  return $ Company uuid n v a b c q
 
 upWithNumber :: UTCTime -> Maybe Int -> Int
 upWithNumber today Nothing =
   let curYear = fromInteger . fst . toOrdinalDate . utctDay $ today
    in (curYear * 1000) + 1
 upWithNumber today (Just cur) =
-  let yearFromNumber = shiftR cur 3
+  let yearFromNumber = cur `div` 1000
    in let curYear = fromInteger . fst . toOrdinalDate . utctDay $ today
        in if curYear == yearFromNumber
             then cur + 1

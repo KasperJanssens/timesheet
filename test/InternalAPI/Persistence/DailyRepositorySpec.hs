@@ -16,6 +16,7 @@ import           Domain.Customer
 import qualified Domain.Customer                         as Customer
 import           Domain.Daily
 import           ExternalAPI.NewTypes.NewCustomer
+import           ExternalAPI.NewTypes.NewCompany
 import           Helper.DatabaseHelper
 import qualified InternalAPI.Persistence.DailyRepository as DailyRecord
 import           Test.Hspec
@@ -31,7 +32,7 @@ spec = around withDatabase $
       initialState <- createInitialState connString
       resOrErr <- runAppM initialState $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
-        company <- CompanyService.insert $ Company "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
         return (Customer.id customer, Company.vatNumber company)
       let (customerId, companyVatNumber) = fromRight undefined resOrErr
       uuid <- UUID.nextRandom

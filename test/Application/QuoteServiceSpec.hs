@@ -13,6 +13,7 @@ import qualified Domain.Customer                  as Customer
 import           Domain.MonthlyReport
 import qualified Domain.Quote                     as Quote
 import qualified ExternalAPI.NewTypes.NewCustomer as NewCustomer
+import qualified ExternalAPI.NewTypes.NewCompany as NewCompany
 import           ExternalAPI.NewTypes.NewQuote
 import           Helper.DatabaseHelper
 import           Test.Hspec
@@ -24,7 +25,7 @@ spec = around withDatabase $
       state <- createInitialState connString
       let quoteVal = 100
       quoteRes <- runAppM state $ do
-        company <- CompanyService.insert Company.dummy
+        company <- CompanyService.insert NewCompany.dummy
         customer <- CustomerService.insert NewCustomer.dummy
         listResult <- QuoteService.list 0 10
         liftIO $ fst listResult `shouldBe` 0

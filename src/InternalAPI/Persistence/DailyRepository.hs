@@ -167,6 +167,9 @@ selectMonthsWithUninvoicedWorkPacks = do
 allMonthsWithWorkedDays :: (MonadIO m) => ReaderT SqlBackend m [(Int, Int, CustomerRecord, CompanyRecord)]
 allMonthsWithWorkedDays = do
   entities <- selectMonthsWithUninvoicedWorkPacks
+  liftIO $ print "This is the result of the raw sql select"
+  liftIO $ print entities
+  liftIO $ print "------------------------------------------"
   --  entities <- selectList [] [Desc DailyRecordYear, Desc DailyRecordMonthNumber]
   let records = entityVal <$> entities
   let groupedRecords =
@@ -175,9 +178,12 @@ allMonthsWithWorkedDays = do
               dailyRecordMonthNumber left == dailyRecordMonthNumber right
                 && dailyRecordYear left == dailyRecordYear right
                 && dailyRecordCustomerLink left == dailyRecordCustomerLink right
-                && dailyRecordCustomerLink left == dailyRecordCustomerLink right
+                && dailyRecordCompanyLink left == dailyRecordCompanyLink right
           )
           records
+  liftIO $ print "These are the grouped records"
+  liftIO $ print groupedRecords
+  liftIO $ print "----------------------------------"
   let distinctMonths = distinctMonthsAndYears groupedRecords
   let res = catMaybes distinctMonths
   foldM
