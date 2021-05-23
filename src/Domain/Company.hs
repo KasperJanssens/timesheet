@@ -14,10 +14,10 @@ data Company = Company
   { id                :: UUID,
     name              :: Text,
     vatNumber         :: Text,
-    address           :: Text,
+    addressStreet     :: Text,
+    addressCity       :: Text,
     bankAccountNumber :: Text,
     lastInvoiceNumber :: Maybe Int,
     lastQuoteNumber   :: Maybe Int
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
-

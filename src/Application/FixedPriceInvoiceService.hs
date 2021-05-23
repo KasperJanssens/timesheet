@@ -46,25 +46,24 @@ get specificUUID = do
   pool <- asks poel
   DB.executeInPool pool $ FixedPriceInvoiceRepository.getFixedPriceInvoice specificUUID
 
-
-insert' :: Maybe UUID -> Double -> UUID -> UUID -> AppM FixedPriceInvoice
-insert' maybeQuoteId total customerId companyId = do
+insert' :: Maybe UUID -> Double -> Text -> UUID -> UUID -> AppM FixedPriceInvoice
+insert' maybeQuoteId total description customerId companyId = do
   maybeCustomer <- CustomerService.get customerId
   time <- liftIO getCurrentTime
   pool <- asks poel
   DB.executeInPool pool $ do
     let today = utctDay time
     let paymentDay = CustomerService.determinePaymentDate' today (fromJust maybeCustomer)
-    invoice <- FixedPriceInvoiceRepository.insertFixedPriceInvoice customerId companyId today paymentDay total
+    invoice <- FixedPriceInvoiceRepository.insertFixedPriceInvoice customerId companyId today paymentDay description total
     maybe (return ()) (QuoteRepository.linkInvoice (FixedPriceInvoice.id invoice)) maybeQuoteId
     return invoice
 
 insert :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
-insert (NewFixedPriceInvoice (Left (NonQuote total customerId companyId))) = insert' Nothing total customerId companyId
+insert (NewFixedPriceInvoice (Left (NonQuote total customerId companyId description))) = insert' Nothing total description customerId companyId
 insert (NewFixedPriceInvoice (Right uuid)) = insertFromQuote uuid
 
 insertFromQuote :: UUID -> AppM FixedPriceInvoice
 insertFromQuote quoteId = do
   maybeQuote <- QuoteService.get quoteId
   quote <- maybe (throw (err404 {errBody = "quote not found"})) return maybeQuote
-  insert' (Just quoteId) (VATReport.totalExcl $ Quote.vatReport quote) (Customer.id $ Quote.customer quote) (Company.id $ Quote.company quote)
+  insert' (Just quoteId) (VATReport.totalExcl $ Quote.vatReport quote) (Quote.description quote) (Customer.id $ Quote.customer quote) (Company.id $ Quote.company quote)

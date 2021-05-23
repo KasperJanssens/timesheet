@@ -10,12 +10,14 @@ import           Domain.Customer (VATNumber (..))
 import           GHC.Generics    (Generic)
 
 data NewCustomer = NewCustomer
-  { name        :: Text,
-    vatNumber   :: VATNumber,
-    hourlyRate  :: Maybe Double,
-    paymentTerm :: Int
+  { name          :: Text,
+    vatNumber     :: VATNumber,
+    addressStreet :: Text,
+    addressCity   :: Text,
+    hourlyRate    :: Maybe Double,
+    paymentTerm   :: Int
   }
   deriving (FromJSON, ToJSON, Generic)
 
 dummy :: NewCustomer
-dummy = NewCustomer "KrondorSoft" (VATNumber "BE0893815606") (Just 75.0) 30
+dummy = NewCustomer "KrondorSoft" (VATNumber "BE0893815606") "OGS 354" "9000 Gent" (Just 75.0) 30

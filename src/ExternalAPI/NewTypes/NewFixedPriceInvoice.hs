@@ -11,7 +11,8 @@ import           GHC.Generics (Generic)
 data NonQuote = NonQuote
   { total      :: Double,
     customerId :: UUID,
-    companyId  :: UUID
+    companyId  :: UUID,
+    description :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)
 

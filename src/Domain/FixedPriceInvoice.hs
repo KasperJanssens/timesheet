@@ -19,6 +19,7 @@ data FixedPriceInvoice = FixedPriceInvoice
     customer     :: Customer,
     company      :: Company,
     dayOfInvoice :: Text,
-    dayOfPayment :: Text
+    dayOfPayment :: Text,
+    description :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

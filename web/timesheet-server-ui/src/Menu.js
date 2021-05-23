@@ -31,7 +31,15 @@ const Menu = ({ onMenuClick, logout }) => {
             ))}
             <MenuItemLink
                 to="/krondorsoft_invoice"
-                primaryText="Krondorsoft_invoice"
+                primaryText="Krondorsoft Invoice"
+                leftIcon={<LabelIcon />}
+                onClick={onMenuClick}
+                sidebarIsOpen={open}
+
+            />
+            <MenuItemLink
+                to="/krondorsoft_fixed_price_invoice"
+                primaryText="Krondorsoft Fixed Price Invoice"
                 leftIcon={<LabelIcon />}
                 onClick={onMenuClick}
                 sidebarIsOpen={open}

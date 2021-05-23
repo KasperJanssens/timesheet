@@ -10,17 +10,17 @@ import           Data.Either.Combinators                 (fromRight)
 import           Data.Maybe                              (isJust)
 import           Data.Time                               (getCurrentTime,
                                                           utctDay)
+import qualified Data.UUID.V4                            as UUID
 import           Domain.Company
 import qualified Domain.Company                          as Company
 import           Domain.Customer
 import qualified Domain.Customer                         as Customer
 import           Domain.Daily
-import           ExternalAPI.NewTypes.NewCustomer
 import           ExternalAPI.NewTypes.NewCompany
+import           ExternalAPI.NewTypes.NewCustomer
 import           Helper.DatabaseHelper
 import qualified InternalAPI.Persistence.DailyRepository as DailyRecord
 import           Test.Hspec
-import qualified Data.UUID.V4 as UUID
 
 spec :: Spec
 spec = around withDatabase $
@@ -31,8 +31,8 @@ spec = around withDatabase $
       let day = utctDay time
       initialState <- createInitialState connString
       resOrErr <- runAppM initialState $ do
-        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "die stad" "de rekening" Nothing Nothing
         return (Customer.id customer, Company.vatNumber company)
       let (customerId, companyVatNumber) = fromRight undefined resOrErr
       uuid <- UUID.nextRandom

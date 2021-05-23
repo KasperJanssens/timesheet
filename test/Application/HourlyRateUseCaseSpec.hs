@@ -87,7 +87,7 @@ spec = around withDatabase $
       state <- createInitialState connString
       res <- runAppM state $ do
         propellant <- CompanyService.insert NewCompany.dummy
-        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "Ievrs op een bank" Nothing Nothing)
+        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
         customer <- CustomerService.insert NewCustomer.dummy
         let customerId = Customer.id customer
         let propellantVat = Company.vatNumber propellant
@@ -132,9 +132,9 @@ spec = around withDatabase $
       state <- createInitialState connString
       res <- runAppM state $ do
         propellant <- CompanyService.insert NewCompany.dummy
-        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "Ievrs op een bank" Nothing Nothing)
+        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
         customer1 <- CustomerService.insert NewCustomer.dummy
-        customer2 <- CustomerService.insert (NewCustomer "KrondorSoftbis" (VATNumber "BE0893815607") (Just 75.0) 30)
+        customer2 <- CustomerService.insert (NewCustomer "KrondorSoftbis" (VATNumber "BE0893815607") "de straat" "de stad" (Just 75.0) 30)
         let customerId1 = Customer.id customer1
         let customerId2 = Customer.id customer2
         let propellantVat = Company.vatNumber propellant

@@ -34,9 +34,9 @@ get id = do
   DB.executeInPool pool $ QuoteRepository.getQuote id
 
 insert :: NewQuote -> AppM Quote
-insert (NewQuote total customerId companyId) = do
+insert (NewQuote total customerId companyId description) = do
   time <- liftIO getCurrentTime
   let today = utctDay time
   pool <- asks poel
   DB.executeInPool pool $ do
-    QuoteRepository.insertQuote customerId companyId total
+    QuoteRepository.insertQuote customerId companyId total description

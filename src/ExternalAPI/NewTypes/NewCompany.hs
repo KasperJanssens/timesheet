@@ -11,7 +11,8 @@ import           GHC.Generics (Generic)
 data NewCompany = NewCompany
   { name              :: Text,
     vatNumber         :: Text,
-    address           :: Text,
+    addressStreet    :: Text,
+    addressCity      :: Text,
     bankAccountNumber :: Text,
     lastInvoiceNumber :: Maybe Int,
     lastQuoteNumber   :: Maybe Int
@@ -19,4 +20,4 @@ data NewCompany = NewCompany
   deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
 
 dummy :: NewCompany
-dummy = NewCompany "Propellant" "BE0767397088" "OGS 354" "Ievrs op een bank" Nothing Nothing
+dummy = NewCompany "Propellant" "BE0767397088" "OGS 354" "9000 Gent" "Ievrs op een bank" Nothing Nothing

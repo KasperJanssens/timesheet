@@ -35,7 +35,8 @@ CompanyRecord
     businessId BusinessId
     name Text
     vatNumber Text
-    address Text
+    addressStreet Text
+    addressCity Text
     bankAccountNumber Text
     currentLastInvoiceFollowUpNumber Int Maybe
     currentLastQuoteFollowUpNumber Int Maybe
@@ -51,10 +52,10 @@ countCompanies :: MonadIO m => ReaderT SqlBackend m Int
 countCompanies = count allCompanies
 
 to :: CompanyRecord -> Company
-to (CompanyRecord (BusinessId uuid) n v a b c q) = Company uuid n v a b c q
+to (CompanyRecord (BusinessId uuid) n v a1 a2 b c q) = Company uuid n v a1 a2 b c q
 
 from :: UUID -> NewCompany -> CompanyRecord
-from uuid (NewCompany n v a b c q) = CompanyRecord (BusinessId uuid) n v a b c q
+from uuid (NewCompany n v a1 a2 b c q) = CompanyRecord (BusinessId uuid) n v a1 a2 b c q
 
 getCompanyByVat :: MonadIO m => Text -> ReaderT SqlBackend m (Maybe Company)
 getCompanyByVat vatNumber = do
@@ -77,9 +78,9 @@ getAllCompanies = do
   return $ map (to . entityVal) records
 
 insertCompany :: MonadIO m => UUID -> NewCompany -> ReaderT SqlBackend m Company
-insertCompany uuid newCompany@(NewCompany n v a b c q) = do
+insertCompany uuid newCompany@(NewCompany n v a1 a2 b c q) = do
   void $ insert (from uuid newCompany)
-  return $ Company uuid n v a b c q
+  return $ Company uuid n v a1 a2 b c q
 
 upWithNumber :: UTCTime -> Maybe Int -> Int
 upWithNumber today Nothing =

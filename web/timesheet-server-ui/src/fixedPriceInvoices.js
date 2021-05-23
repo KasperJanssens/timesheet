@@ -61,6 +61,27 @@ export const FixedPriceInvoiceList = props => {
     );
 }
 
+const ShowInvoiceButton = ({ record }) => {
+    return (
+        <div>
+            {/*<ShowButton basePath="/invoice" label="Show invoice" record={record} />*/}
+            <Link to={{
+                pathname: '/krondorsoft_fixed_price_invoice',
+                state: {
+                    today: "tis vandaag he",
+                    month: record.month,
+                    customer: record.customer,
+                    company: record.company,
+                    vatReport : record.vatReport,
+                    totalDays: record.totalDays,
+                    invoiceNumber : record.invoiceNumber,
+                    dayOfInvoice  : record.dayOfInvoice,
+                    dayOfPayment  : record.dayOfPayment
+                }
+            }} >Show Krondorsoft_invoice</Link>
+        </div>
+    )};
+
 const ChooseQuoteOrFixedPrice = (props) => {
     const {values} = useFormState();
     const {
@@ -111,6 +132,7 @@ const ChooseQuoteOrFixedPrice = (props) => {
                                  label={"choose customer"}/>
                     <SelectInput source={"invoice.Left.companyId"} choices={selectCompanies}
                                  label={"choose company"}/>
+                     <TextInput source={"invoice.Left.description"} label={"Description"}/>
                 </div>
             }
         </div>
@@ -166,6 +188,7 @@ export const FixedPriceInvoiceShow = (props) => {
                              label={"choose company"}/>
                 <TextField source={"dayOfInvoice"} label={"Day of invoice"}/>
                 <TextField source={"dayOfPayment"} label={"Day of payment"}/>
+                <ShowInvoiceButton />
             </SimpleShowLayout>
         </Show>)
 }

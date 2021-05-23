@@ -34,8 +34,8 @@ spec = around withDatabase $
     it "should find an invoice, without monthly report" $ \connString -> do
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
-        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "dat stadje" "de rekening" Nothing Nothing
+        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
         let customerId = Domain.Customer.id customer
         let companyId = Domain.Company.id company
         InvoiceService.insert (MonthlyId 2021 5 customerId companyId)
@@ -49,8 +49,8 @@ spec = around withDatabase $
     it "should find an invoice, with monthly report" $ \connString -> do
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
-        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") (Just 75.0) 30)
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "de rekening" Nothing Nothing
+        customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "dees stadje" "de rekening" Nothing Nothing
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [NewWorkPack 7.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [NewWorkPack 5.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [NewWorkPack 6.0 IMPL "Jos"] (Customer.id customer) (Company.vatNumber company))

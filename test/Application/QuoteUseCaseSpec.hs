@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Application.QuoteUseCaseSpec where
 
 import qualified Application.CompanyService           as CompanyService
@@ -25,9 +27,9 @@ spec = around withDatabase $
         runAppM state $ do
           customer <- CustomerService.insert NewCustomer.dummy
           company <- CompanyService.insert NewCompany.dummy
-          quote1 <- QuoteService.insert (NewQuote 100 (Customer.id customer) (Company.vatNumber company))
-          quote2 <- QuoteService.insert (NewQuote 200 (Customer.id customer) (Company.vatNumber company))
-          quote3 <- QuoteService.insert (NewQuote 300 (Customer.id customer) (Company.vatNumber company))
+          quote1 <- QuoteService.insert (NewQuote 100 (Customer.id customer) (Company.vatNumber company) "onnozelheid")
+          quote2 <- QuoteService.insert (NewQuote 200 (Customer.id customer) (Company.vatNumber company) "meer onnozelheid")
+          quote3 <- QuoteService.insert (NewQuote 300 (Customer.id customer) (Company.vatNumber company) "absolute onzin")
 
           invoiceList1 <- FixedPriceInvoiceService.list 0 10
           liftIO $ fst invoiceList1 `shouldBe` 0

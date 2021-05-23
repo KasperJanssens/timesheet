@@ -56,10 +56,10 @@ delete businessId = do
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
 insert :: NewCustomer -> AppM Customer
-insert (NewCustomer n vat h paymentTerm) = do
+insert (NewCustomer n vat addressStreet addressCity h paymentTerm) = do
   pool <- asks poel
   businessId <- liftIO UUID.nextRandom
-  let customer = Customer businessId n vat h paymentTerm
+  let customer = Customer businessId n addressStreet addressCity vat h paymentTerm
   void $
     DB.executeInPool pool $
       do

@@ -29,6 +29,8 @@ share
 CustomerRecord
     businessId BusinessId
     name Text
+    addressStreet Text
+    addressCity Text
     vatNumber Text
     hourlyRate Double Maybe
     creationDate UTCTime
@@ -39,10 +41,10 @@ CustomerRecord
 |]
 
 from :: UTCTime -> Customer -> CustomerRecord
-from now (Customer id name (VATNumber vat) hourly paymentTerm) = CustomerRecord (BusinessId id) name vat hourly now paymentTerm
+from now (Customer id name  addressStreet addressCity (VATNumber vat) hourly paymentTerm) = CustomerRecord (BusinessId id) name  addressStreet addressCity vat hourly now paymentTerm
 
 to :: CustomerRecord -> Customer
-to (CustomerRecord businessId name vatNumber hourlyRate _ paymentTerm) = Customer (coerce businessId) name (VATNumber vatNumber) hourlyRate paymentTerm
+to (CustomerRecord businessId name addressStreet addressCity vatNumber hourlyRate _ paymentTerm) = Customer (coerce businessId) name   addressStreet addressCity (VATNumber vatNumber) hourlyRate paymentTerm
 
 allCustomers :: [Filter CustomerRecord]
 allCustomers = []

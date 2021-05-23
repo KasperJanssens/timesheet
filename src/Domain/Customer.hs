@@ -17,6 +17,8 @@ data VATNumber = VATNumber Text deriving (FromJSON, ToJSON, Generic, Eq, Ord, Sh
 data Customer = Customer
   { id          :: UUID,
     name        :: Text,
+    addressStreet :: Text,
+    addressCity :: Text,
     vatNumber   :: VATNumber,
     hourlyRate  :: Maybe Double,
     paymentTerm :: Int

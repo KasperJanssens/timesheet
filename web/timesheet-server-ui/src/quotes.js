@@ -85,6 +85,7 @@ export const QuoteCreate = (props) => {
                 <SelectInput source={"companyId"} choices={selectCompanies} />
                 <SelectInput source={"customerId"} choices={selectCustomers} />
                 <NumberInput source="total"  label={"Fixed price total (excluding vat, in euros)"}/>
+                <TextInput source={"description"} label={"Description of work"}/>
             </SimpleForm>
         </Create>)
 }

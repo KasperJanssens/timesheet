@@ -40,6 +40,7 @@ FixedPriceInvoiceRecord
     totalAmount Double
     dayOfInvoice Day
     dayOfPayment Day
+    description Text
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     invoiceFollowUpNumber Int
@@ -53,12 +54,12 @@ allFixedPriceInvoices = []
 countFixedPriceInvoices :: MonadIO m => ReaderT SqlBackend m Int
 countFixedPriceInvoices = count allFixedPriceInvoices
 
-createFixedPriceInvoiceRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> Int -> Day -> Day -> Double -> FixedPriceInvoiceRecord
-createFixedPriceInvoiceRecord uuid customerId companyId followUpNumber today paymentDay total =
-  FixedPriceInvoiceRecord (BusinessId uuid) total today paymentDay customerId companyId followUpNumber
+createFixedPriceInvoiceRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> Int -> Day -> Day -> Text -> Double -> FixedPriceInvoiceRecord
+createFixedPriceInvoiceRecord uuid customerId companyId followUpNumber today paymentDay description  total =
+  FixedPriceInvoiceRecord (BusinessId uuid) total today paymentDay description customerId companyId followUpNumber
 
-toFixedPriceInvoice' :: UUID -> Int -> Day -> Day -> Double -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
-toFixedPriceInvoice' id invoiceId today paymentDay totalExcl customerRecord companyRecord =
+toFixedPriceInvoice' :: UUID -> Int -> Day -> Day -> Text -> Double -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
+toFixedPriceInvoice' id invoiceId today paymentDay description totalExcl customerRecord companyRecord =
   let total = totalExcl * 1.21
    in let totalVat = total - totalExcl
        in let customer = CustomerRepository.to customerRecord
@@ -71,9 +72,10 @@ toFixedPriceInvoice' id invoiceId today paymentDay totalExcl customerRecord comp
                     company
                     (Text.pack . showGregorian $ today)
                     (Text.pack . showGregorian $ paymentDay)
+                    description 
 
 toFixedPriceInvoice :: FixedPriceInvoiceRecord -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
-toFixedPriceInvoice (FixedPriceInvoiceRecord (BusinessId id) totalExcl today paymentDay _ _ invoiceId) = toFixedPriceInvoice' id invoiceId today paymentDay totalExcl
+toFixedPriceInvoice (FixedPriceInvoiceRecord (BusinessId id) totalExcl today  paymentDay description _ _ invoiceId) = toFixedPriceInvoice' id invoiceId today paymentDay description  totalExcl
 
 getFixedPriceInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe FixedPriceInvoice)
 getFixedPriceInvoice uuid = do
@@ -91,7 +93,7 @@ getFixedPriceInvoice uuid = do
     maybeEntity
 
 retrieveCustomer :: MonadIO m => FixedPriceInvoiceRecord -> ReaderT SqlBackend m FixedPriceInvoice
-retrieveCustomer fixedPriceInvoiceRecord@(FixedPriceInvoiceRecord _ _ _ _ customerRecordId companyRecordId _) = do
+retrieveCustomer fixedPriceInvoiceRecord@(FixedPriceInvoiceRecord _ _ _ _ _ customerRecordId companyRecordId _) = do
   maybeCustomer <- selectFirst [CustomerRecordId ==. customerRecordId] []
   maybeCompany <- selectFirst [CompanyRecordId ==. companyRecordId] []
   let customerRecord = entityVal . fromJust $ maybeCustomer
@@ -103,8 +105,8 @@ getFixedPriceInvoices start stop = do
   records <- selectList [] [Desc FixedPriceInvoiceRecordInvoiceFollowUpNumber, OffsetBy start, LimitTo (stop - start)]
   mapM (retrieveCustomer . entityVal) records
 
-insertFixedPriceInvoice :: MonadIO m => UUID -> UUID -> Day -> Day -> Double -> ReaderT SqlBackend m FixedPriceInvoice
-insertFixedPriceInvoice customerId companyId today paymentDay total = do
+insertFixedPriceInvoice :: MonadIO m => UUID -> UUID -> Day -> Day -> Text -> Double -> ReaderT SqlBackend m FixedPriceInvoice
+insertFixedPriceInvoice customerId companyId today paymentDay description total  = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
   maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
   newFollowUpNumber <- CompanyRepository.nextNumber companyId
@@ -114,6 +116,6 @@ insertFixedPriceInvoice customerId companyId today paymentDay total = do
   let companyRecord = fromJust maybeCompany
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
-  let fixedPriceRecord = createFixedPriceInvoiceRecord uuid customerRecordId companyRecordId newFollowUpNumber today paymentDay total
+  let fixedPriceRecord = createFixedPriceInvoiceRecord uuid customerRecordId companyRecordId newFollowUpNumber today paymentDay description total 
   _ <- insert fixedPriceRecord
-  return $ toFixedPriceInvoice' uuid newFollowUpNumber today paymentDay total (entityVal customerRecord) (entityVal companyRecord)
+  return $ toFixedPriceInvoice' uuid newFollowUpNumber today paymentDay description total (entityVal customerRecord) (entityVal companyRecord)

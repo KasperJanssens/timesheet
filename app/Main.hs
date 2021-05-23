@@ -19,17 +19,13 @@ main :: IO ()
 main = do
   runApp
 
---  print $ runCalc 6
---  runBiggerProblem
---  runLongestIncreasing
-
 runApp :: IO ()
 runApp = do
   let password = "mysecretpassword"
   let user = "postgres"
-  let dbLessConn = Database.connDbless "localhost" user password 5432
+  let dbLessConn = Database.connDbless "localhost" user password 9875
   Database.provisionalCreateDatabase dbLessConn
-  let dbConn = Database.conn "localhost" "timesheetdb" user password 5432
+  let dbConn = Database.conn "localhost" "timesheetdb" user password 9875
   Database.migrate dbConn
 
   start 9876

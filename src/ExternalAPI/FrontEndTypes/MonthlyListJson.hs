@@ -33,7 +33,7 @@ from (UninvoicedWork specMonth@(SpecificMonth y m) customer company) =
   MonthlyListJson (toId specMonth customer company) m (fromIntegral y) company customer
 
 createId :: SpecificMonth -> Customer -> Company -> Text
-createId (SpecificMonth y m) (Customer customerId _ _ _ _) (Company companyId _ _ _ _ _ _) =
+createId (SpecificMonth y m) (Customer customerId _ _ _ _ _ _) (Company companyId _ _ _ _ _ _ _) =
   let yearText = intToText (fromIntegral y)
    in let monthText = intToText m
        in let customerIdText = UUID.toText customerId
