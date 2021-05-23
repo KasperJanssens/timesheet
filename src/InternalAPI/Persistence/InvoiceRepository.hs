@@ -101,7 +101,7 @@ to :: [ReportEntryRecord] -> CustomerRecord -> CompanyRecord -> InvoiceRecord ->
 to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord (BusinessId businessId) m y dayOfIn dayOfPay _ _ i) =
   let customer = CustomerRepository.to customerRecord in
   let company = CompanyRepository.to companyRecord 
-   in Invoice businessId (SpecificMonth (toInteger y) m) (createMonthlyReport invoiceRecord reportEntries customerRecord) customer company
+   in Invoice businessId (SpecificMonth y m) (createMonthlyReport invoiceRecord reportEntries customerRecord) customer company
 
 selectMaxFollowUpNumber :: (MonadIO m) => ReaderT SqlBackend m (Maybe Int)
 selectMaxFollowUpNumber = do
@@ -149,11 +149,11 @@ getInvoices start stop = do
   records <- selectList [] [Desc InvoiceRecordYear, Desc InvoiceRecordMonthNumber, OffsetBy start, LimitTo (stop - start)]
   mapM fetchDependencies records
 
-insertInvoice :: MonadIO m =>  UUID -> Text ->  SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
-insertInvoice  customerId companyVat specificMonth entries today paymentDay = do
+insertInvoice :: MonadIO m =>  UUID -> UUID ->  SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
+insertInvoice  customerId companyId specificMonth entries today paymentDay = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
-  maybeCompany <- getBy . UniqueCompanyVAT  $ companyVat
-  newFollowUpNumber <- CompanyRepository.nextNumber companyVat
+  maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
+  newFollowUpNumber <- CompanyRepository.nextNumber companyId
   -- TODO  No from just, fix this
   let customerRecord = fromJust maybeCustomer
   let companyRecord = fromJust maybeCompany

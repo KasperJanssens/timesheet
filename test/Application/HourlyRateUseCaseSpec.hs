@@ -8,6 +8,7 @@ import qualified Application.DailyService         as DailyService
 import qualified Application.InvoiceService       as InvoiceService
 import           Application.MonthlyService       (UninvoicedWork (..))
 import qualified Application.MonthlyService       as MonthlyService
+import           Common.Helper
 import           Control.Monad                    (void)
 import           Control.Monad.IO.Class           (liftIO)
 import           Data.Either                      (isRight)
@@ -19,6 +20,8 @@ import           Domain.Customer                  (VATNumber (..))
 import qualified Domain.Customer                  as Customer
 import           Domain.Daily
 import qualified Domain.Invoice                   as Invoice
+import           Domain.Monthly                   (SpecificMonth (..))
+import           Domain.MonthlyId
 import qualified Domain.MonthlyReport             as MonthlyReport
 import           ExternalAPI.NewTypes.NewCompany
 import qualified ExternalAPI.NewTypes.NewCompany  as NewCompany
@@ -30,8 +33,8 @@ import           Helper.DatabaseHelper
 import           Helper.TestHelper
 import           Test.Hspec
 
-fromUninvoiced :: UninvoicedWork -> NewInvoice
-fromUninvoiced (UninvoicedWork specificMonth customer company) = NewInvoice specificMonth (Customer.id customer) (Company.vatNumber company)
+fromUninvoiced :: UninvoicedWork -> MonthlyId
+fromUninvoiced (UninvoicedWork (SpecificMonth y m) customer company) = MonthlyId y m (Customer.id customer) (Company.id company)
 
 spec :: Spec
 spec = around withDatabase $

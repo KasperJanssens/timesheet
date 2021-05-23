@@ -44,12 +44,12 @@ delete dailyId = do
       DailyRepository.deleteDaily dailyId
       return maybeDay
 
-getAllForMonth :: UUID -> Text -> SpecificMonth -> AppM [Daily]
-getAllForMonth companyId customerVat (SpecificMonth y m) = do
+getAllForMonth :: UUID -> UUID -> SpecificMonth -> AppM [Daily]
+getAllForMonth companyId customerId (SpecificMonth y m) = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      DailyRepository.workPacksForMonth companyId customerVat y m
+      DailyRepository.workPacksForMonth companyId customerId y m
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
 insert :: NewDaily -> AppM Daily

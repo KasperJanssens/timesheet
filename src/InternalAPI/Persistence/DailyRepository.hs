@@ -80,10 +80,10 @@ to customerRecord companyRecord workPackRecords dailyRecord =
   let workPacks = toWorkPack <$> workPackRecords
    in toDaily (uuid $ dailyRecordBusinessId dailyRecord) (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord)
 
-workPacksForMonth :: (MonadIO m) => UUID -> Text -> Integer -> Int -> ReaderT SqlBackend m [Daily]
-workPacksForMonth customerId companyVat year month = do
+workPacksForMonth :: (MonadIO m) => UUID -> UUID -> Int -> Int -> ReaderT SqlBackend m [Daily]
+workPacksForMonth customerId companyId year month = do
   maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
-  maybeCompany <- getBy (UniqueCompanyVAT companyVat)
+  maybeCompany <- getBy (UniqueCompanyBusinessId (BusinessId companyId))
   let customerRecord = fromJust maybeCustomer
   let companyRecord = fromJust maybeCompany
   records <-

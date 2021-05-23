@@ -21,8 +21,7 @@ import           Servant.Server.Internal.Handler     (runHandler)
 import           Servant.Server.Internal.ServerError (ServerError)
 
 
-hasSize:: Foldable t => Int -> t a -> Bool
-hasSize i foldable = length foldable == i
+
 
 runWithoutPool :: ConnectionString -> ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> IO a
 runWithoutPool connectionString dbAction = liftIO $ runStderrLoggingT $ withPostgresqlPool connectionString 10 $ liftSqlPersistMPool dbAction

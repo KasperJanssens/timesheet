@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e7be87b17cd37fa200f500520629e2681610965015ee445f81707f1de0a4b255
+-- hash: 98f1248e72ac12f8213a8cd4a942dd5c112fc7b179b1a923da5035b90356fb1e
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -37,12 +37,14 @@ library
       Application.MonthlyService
       Application.QuoteService
       Application.ServiceClass
+      Common.Helper
       Domain.Company
       Domain.Customer
       Domain.Daily
       Domain.FixedPriceInvoice
       Domain.Invoice
       Domain.Monthly
+      Domain.MonthlyId
       Domain.MonthlyReport
       Domain.Quote
       ExternalAPI.ApiType

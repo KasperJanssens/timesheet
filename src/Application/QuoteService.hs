@@ -16,6 +16,7 @@ listNonInvoiced :: AppM [Quote]
 listNonInvoiced = do
   pool <- asks poel
   DB.executeInPool pool $ do
+    liftIO $ print " Listing non invoiced stuff"
     QuoteRepository.listNonInvoiced
     
     

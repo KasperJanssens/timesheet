@@ -12,6 +12,7 @@ import {
 import React from "react";
 import {Link} from "react-router-dom";
 import {useGetList} from "ra-core";
+import {IsoOutlined} from "@material-ui/icons";
 
 const ShowInvoiceButton = ({ record }) => {
     return (
@@ -46,15 +47,6 @@ export const InvoiceList = props => {
 
 export const InvoiceCreate = (props) => {
     const {
-        data: customers,
-        loading: loadingCustomers,
-        error: errorCustomers
-    } = useGetList('customer', {
-        page: 1,
-        perPage: 1000
-    }, {}, {});
-
-    const {
         data: monthlies,
         loading: loadingMonthlies,
         error: errorMonthlies
@@ -64,18 +56,13 @@ export const InvoiceCreate = (props) => {
     }, {}, {});
     if (loadingMonthlies) return <Loading/>;
     if (errorMonthlies) return <Error error={"Could not load work types"}/>;
-    if (loadingCustomers) return <Loading/>;
-    if (errorCustomers) return <Error error={"Could not load work types"}/>;
-    const monthlyChoices = Object.values(monthlies).map(item => ({id: { m: item.month, y: item.year}, name: item.year + " " + item.month}));
-    const customerChoices = Object.values(customers).map(item => ({id: item.id, name : item.name}))
+    const monthlyValues = Object.values(monthlies)
+    // monthlyValues.forEach((item, n, r) => console.log(item))
+    const monthlyChoices = monthlyValues.map(item => ({id: item.id, name: item.year + " " + item.month + " " + item.company.name + " " + item.customer.name}));
     return (
         <Create  {...props}>
             <SimpleForm>
-                <SelectInput source={"specificMonth"} choices={monthlyChoices} />
-                <SelectInput source={"customerId"} choices={customerChoices} />
-                {/*<NumberInput source="amount" step={0.5} label={"hours"}/>*/}
-                {/*<TextInput source={"invoiceNumber"} label={"Invoice number"}/>*/}
-                {/*<ShowInvoiceButton />*/}
+                <SelectInput source={"monthlyId"} choices={monthlyChoices} />
             </SimpleForm>
         </Create>)
 }
@@ -86,7 +73,7 @@ export const InvoiceShow = (props) => {
         <Show  {...props}>
             <SimpleShowLayout>
                 <TextField source={"invoiceNumber"} label={"Invoice number"}/>
-                {/*<ShowInvoiceButton />*/}
+                <ShowInvoiceButton />
             </SimpleShowLayout>
         </Show>)
 }

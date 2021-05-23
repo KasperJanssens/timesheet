@@ -92,9 +92,9 @@ upWithNumber today (Just cur) =
             then cur + 1
             else (curYear * 1000) + 1
 
-nextNumber :: MonadIO m => Text -> ReaderT SqlBackend m Int
-nextNumber vatNumber = do
-  maybeCompanyEntity <- getBy (UniqueCompanyVAT vatNumber)
+nextNumber :: MonadIO m => UUID -> ReaderT SqlBackend m Int
+nextNumber companyId = do
+  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId . BusinessId $  companyId)
   -- TODO no from just, remove this
   let companyEntity = fromJust maybeCompanyEntity
   time <- liftIO getCurrentTime

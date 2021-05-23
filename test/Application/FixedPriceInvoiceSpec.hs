@@ -32,7 +32,7 @@ spec = around withDatabase $
         liftIO $ fst res `shouldBe` 0
         customer <- CustomerService.insert NewCustomer.dummy
         company <- CompanyService.insert NewCompany.dummy
-        let newFixedPriceInvoice = NewFixedPriceInvoice 200.0 (Customer.id customer) (Company.vatNumber company)
+        let newFixedPriceInvoice = NewFixedPriceInvoice (Left (NonQuote 200.0 (Customer.id customer) (Company.id company)))
         fixedPriceInvoice <- FixedPriceInvoiceService.insert newFixedPriceInvoice
         FixedPriceInvoiceService.get (FixedPriceInvoice.id fixedPriceInvoice)
       fixedPriceInvoiceOrErr `shouldSatisfy` isRight

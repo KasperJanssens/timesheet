@@ -18,9 +18,6 @@ import           Control.Monad.Reader                       (ReaderT)
 import           Data.Maybe                                 (fromJust)
 import           Data.Text                                  (Text)
 import qualified Data.Text                                  as Text
-import           Data.Text.Internal.Builder                 (toLazyText)
-import           Data.Text.Lazy                             (toStrict)
-import           Data.Text.Lazy.Builder.Int                 (decimal)
 import           Data.Time.Calendar                         (Day, showGregorian)
 import           Data.UUID                                  (UUID)
 import qualified Data.UUID.V4                               as UUID
@@ -33,6 +30,7 @@ import           InternalAPI.Persistence.CompanyRepository
 import qualified InternalAPI.Persistence.CompanyRepository  as CompanyRepository
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
+import qualified Common.Helper as Common
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateFixedPriceInvoice"]
@@ -67,7 +65,7 @@ toFixedPriceInvoice' id invoiceId today paymentDay totalExcl customerRecord comp
            in let company = CompanyRepository.to companyRecord
                in FixedPriceInvoice
                     id
-                    (toStrict . toLazyText . decimal $ invoiceId)
+                    (Common.intToText invoiceId)
                     (VATReport totalExcl totalVat total)
                     customer
                     company
@@ -105,11 +103,11 @@ getFixedPriceInvoices start stop = do
   records <- selectList [] [Desc FixedPriceInvoiceRecordInvoiceFollowUpNumber, OffsetBy start, LimitTo (stop - start)]
   mapM (retrieveCustomer . entityVal) records
 
-insertFixedPriceInvoice :: MonadIO m => UUID -> Text -> Day -> Day -> Double -> ReaderT SqlBackend m FixedPriceInvoice
-insertFixedPriceInvoice customerId companyVat today paymentDay total = do
+insertFixedPriceInvoice :: MonadIO m => UUID -> UUID -> Day -> Day -> Double -> ReaderT SqlBackend m FixedPriceInvoice
+insertFixedPriceInvoice customerId companyId today paymentDay total = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
-  maybeCompany <- getBy . UniqueCompanyVAT $ companyVat
-  newFollowUpNumber <- CompanyRepository.nextNumber companyVat
+  maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
+  newFollowUpNumber <- CompanyRepository.nextNumber companyId
   uuid <- liftIO UUID.nextRandom
   -- TODO  No from just, fix this
   let customerRecord = fromJust maybeCustomer

@@ -4,13 +4,14 @@ import qualified Application.CompanyService           as CompanyService
 import qualified Application.CustomerService          as CustomerService
 import qualified Application.FixedPriceInvoiceService as FixedPriceInvoiceService
 import qualified Application.QuoteService             as QuoteService
+import           Common.Helper
 import           Control.Monad.Cont                   (void)
 import           Control.Monad.IO.Class               (liftIO)
 import qualified Domain.Company                       as Company
 import qualified Domain.Customer                      as Customer
 import qualified Domain.Quote                         as Quote
+import qualified ExternalAPI.NewTypes.NewCompany      as NewCompany
 import qualified ExternalAPI.NewTypes.NewCustomer     as NewCustomer
-import qualified ExternalAPI.NewTypes.NewCompany     as NewCompany
 import           ExternalAPI.NewTypes.NewQuote
 import           Helper.DatabaseHelper
 import           Test.Hspec

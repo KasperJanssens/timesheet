@@ -8,9 +8,14 @@ import           Data.Text    (Text)
 import           Data.UUID    (UUID)
 import           GHC.Generics (Generic)
 
-data NewFixedPriceInvoice = NewFixedPriceInvoice
+data NonQuote = NonQuote
   { total      :: Double,
     customerId :: UUID,
-    companyId :: Text
+    companyId  :: UUID
+  }
+  deriving (FromJSON, ToJSON, Generic, Eq, Show)
+
+data NewFixedPriceInvoice = NewFixedPriceInvoice
+  { invoice :: Either NonQuote UUID
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

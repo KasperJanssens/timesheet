@@ -16,7 +16,7 @@ import           GHC.Generics   (Generic)
 import           Servant.API    (FromHttpApiData (..))
 import           Text.Builder   (decimal, run)
 
-type Year = Integer
+type Year = Int
 
 type MonthOfYear = Int
 

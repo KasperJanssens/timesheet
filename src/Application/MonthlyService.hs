@@ -27,7 +27,7 @@ import Domain.Company (Company)
 updateMonthlyMap :: Daily -> MonthlyMap -> ((), MonthlyMap)
 updateMonthlyMap daily@(Daily _ day _ _ _) map =
   let (year, monthOfYear, _) = toJulian day
-   in let updatedMap = Map.insertWith merge (SpecificMonth year monthOfYear) (Monthly.create year monthOfYear daily) map
+   in let updatedMap = Map.insertWith merge (SpecificMonth (fromIntegral year) monthOfYear) (Monthly.create (fromIntegral year) monthOfYear daily) map
        in ((), updatedMap)
 
 merge :: Monthly -> Monthly -> Monthly
@@ -39,12 +39,12 @@ selectMonthsWithUninvoicedWork :: AppM [UninvoicedWork]
 selectMonthsWithUninvoicedWork = do
   pool <- asks poel
   uninvoicedWork <- DB.executeInPool pool DailyRepository.allMonthsWithWorkedDays
-  return $ (\(m, y, customer, company) -> UninvoicedWork (SpecificMonth (toInteger y) m) (CustomerRepository.to customer) (CompanyRepository.to company)) <$> uninvoicedWork
+  return $ (\(m, y, customer, company) -> UninvoicedWork (SpecificMonth  y m) (CustomerRepository.to customer) (CompanyRepository.to company)) <$> uninvoicedWork
 
-getReport :: UUID -> Text -> SpecificMonth -> AppM MonthlyReport
-getReport customerId companyVat specificMonth@(SpecificMonth year month) = do
+getReport :: UUID -> UUID -> SpecificMonth -> AppM MonthlyReport
+getReport customerId companyId specificMonth@(SpecificMonth year month) = do
   pool <- asks poel
-  dailies <- DB.executeInPool pool $ DailyRepository.workPacksForMonth customerId companyVat year month
+  dailies <- DB.executeInPool pool $ DailyRepository.workPacksForMonth customerId companyId year month
   today <- liftIO getCurrentTime
   let monthlyReport = toMonthlyReport (utctDay today) specificMonth dailies
   return monthlyReport

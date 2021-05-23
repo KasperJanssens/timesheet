@@ -16,6 +16,7 @@ import           InternalAPI.Persistence.DailyRepository   as DailyRepository
 import qualified InternalAPI.Persistence.Database          as DB
 import           InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
 import           Numeric.Natural
+import Domain.MonthlyId
 
 list :: Natural -> Natural -> AppM (Int, [Invoice])
 list from to = do
@@ -30,10 +31,11 @@ get invoiceId = do
   pool <- asks poel
   DB.executeInPool pool $ InvoiceRepository.getInvoice invoiceId
 
-insert :: NewInvoice -> AppM Invoice
-insert (NewInvoice specificMonth customerId companyId) = do
+insert :: MonthlyId -> AppM Invoice
+insert (MonthlyId y m customerId companyId) = do
   time <- liftIO getCurrentTime
   let today = utctDay time
+  let specificMonth =  SpecificMonth y m
   paymentDay <- CustomerService.determinePaymentDate today customerId
   dailies <- DailyService.getAllForMonth customerId companyId specificMonth
   let ws = concat $ workpacks <$> dailies

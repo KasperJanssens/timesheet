@@ -10,13 +10,15 @@
 
 module ExternalAPI.Server where
 
+import qualified Application.CompanyService                as CompanyService
 import qualified Application.CustomerService               as CustomerService
-import qualified Application.CompanyService               as CompanyService
 import qualified Application.DailyService                  as DailyService
 import           Application.Environment
+import qualified Application.FixedPriceInvoiceService      as FixedPriceInvoiceService
 import qualified Application.InvoiceService                as InvoiceService
 import qualified Application.MapUtil                       as MapUtil
 import qualified Application.MonthlyService                as MonthlyService
+import qualified Application.QuoteService                  as QuoteService
 import           Application.ServiceClass
 import           Control.Applicative
 import           Control.Concurrent.STM                    (atomically,
@@ -35,20 +37,25 @@ import qualified Data.UUID.V4                              as UUID
 import           Database.Persist.Postgresql               (ConnectionString,
                                                             createPostgresqlPool)
 import           Debug.Trace
+import           Domain.Company                            (Company)
 import           Domain.Customer                           (Customer)
-import           Domain.Company                           (Company)
 import           Domain.Daily                              (allWorkTypes)
+import           Domain.FixedPriceInvoice                  (FixedPriceInvoice)
 import           Domain.Invoice                            (Invoice)
 import           Domain.Monthly
+import           Domain.MonthlyId
 import           Domain.MonthlyReport
+import           Domain.Quote                              (Quote)
 import           ExternalAPI.ApiType
 import           ExternalAPI.FrontEndTypes.DailyJson
 import           ExternalAPI.FrontEndTypes.MonthlyListJson (MonthlyListJson,
                                                             from)
-import           ExternalAPI.NewTypes.NewCustomer
 import           ExternalAPI.NewTypes.NewCompany
+import           ExternalAPI.NewTypes.NewCustomer
 import           ExternalAPI.NewTypes.NewDaily
+import           ExternalAPI.NewTypes.NewFixedPriceInvoice (NewFixedPriceInvoice (..))
 import           ExternalAPI.NewTypes.NewInvoice           (NewInvoice (..))
+import           ExternalAPI.NewTypes.NewQuote             (NewQuote (..))
 import           ExternalAPI.WorkTypeJson
 import qualified InternalAPI.Persistence.Database          as Database
 import qualified Network.HTTP.Types                        as HttpTypes
@@ -113,13 +120,13 @@ getDaily dailyId = do
 
 insertDailyWithGuard :: NewDaily -> AppM DailyJson
 insertDailyWithGuard newDaily@(NewDaily d _ cId cVat) = do
---  TODO Do this better
---  maybeDaily <- DailyService.get cId cVat d
---  if isJust maybeDaily
---    then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
---    else do
-      daily <- DailyService.insert newDaily
-      return $ fromDaily daily
+  --  TODO Do this better
+  --  maybeDaily <- DailyService.get cId cVat d
+  --  if isJust maybeDaily
+  --    then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
+  --    else do
+  daily <- DailyService.insert newDaily
+  return $ fromDaily daily
 
 listCustomer :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Customer])
 listCustomer (Just start) (Just end) = do
@@ -152,7 +159,7 @@ listCompany :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Compan
 listCompany (Just start) (Just end) = do
   (total, companies) <- CompanyService.list start end
   return $ addHeader total companies
-listCompany _ _ =  do
+listCompany _ _ = do
   allCompanies <- CompanyService.listAll
   return $ addHeader (length allCompanies) allCompanies
 
@@ -164,10 +171,8 @@ getCompany businessId = do
 insertCompany :: NewCompany -> AppM Company
 insertCompany = CompanyService.insert
 
-
 serveCompanyApi :: ServerT CompanyApi AppM
 serveCompanyApi = listCompany :<|> insertCompany :<|> getCompany
-
 
 serveWorkTypes :: ServerT WorkTypeApi AppM
 serveWorkTypes = listWorkType
@@ -181,17 +186,44 @@ listMonthlies (Just start) (Just end) = do
 listInvoices :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Invoice])
 listInvoices (Just start) (Just end) = do
   (t, invoices) <- InvoiceService.list start end
-  liftIO $ print t
-  liftIO $ print invoices
   return $ addHeader t invoices
 
+listFixedPriceInvoices :: Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [FixedPriceInvoice])
+listFixedPriceInvoices (Just start) (Just end) = do
+  (t, fixedPriceInvoices) <- FixedPriceInvoiceService.list start end
+  return $ addHeader t fixedPriceInvoices
+
+listQuotes :: Maybe QuoteFilter -> Maybe Natural -> Maybe Natural -> AppM (XTotalCountHeader [Quote])
+listQuotes Nothing (Just start) (Just end) = do
+  (t, quotes) <- QuoteService.list start end
+  return $ addHeader t quotes
+listQuotes (Just Uninvoiced) _ _ = do
+  quotes <- QuoteService.listNonInvoiced
+  return $ addHeader (length quotes) quotes
+
 createInvoice :: NewInvoice -> AppM Invoice
-createInvoice = InvoiceService.insert
+createInvoice (NewInvoice monthlyId)= InvoiceService.insert monthlyId
+
+createFixedPriceInvoice :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
+createFixedPriceInvoice = FixedPriceInvoiceService.insert
+
+createQuote :: NewQuote -> AppM Quote
+createQuote = QuoteService.insert
 
 getInvoice :: UUID -> AppM Invoice
 getInvoice invoiceId = do
   maybeInvoice <- InvoiceService.get invoiceId
   maybe (throwError $ err404 {errBody = "Could not find invoice"}) return maybeInvoice
+
+getFixedPriceInvoice :: UUID -> AppM FixedPriceInvoice
+getFixedPriceInvoice fixedPriceInvoiceId = do
+  maybeFixedPriceInvoice <- FixedPriceInvoiceService.get fixedPriceInvoiceId
+  maybe (throwError $ err404 {errBody = "Could not find ficed price invoice"}) return maybeFixedPriceInvoice
+
+getQuote :: UUID -> AppM Quote
+getQuote quoteId = do
+  maybeQuote <- QuoteService.get quoteId
+  maybe (throwError $ err404 {errBody = "Could not find quote"}) return maybeQuote
 
 --getMonthly :: SpecificMonth -> AppM MonthlyReport
 --getMonthly = MonthlyService.getReport
@@ -202,9 +234,15 @@ serveMonthlyApi = listMonthlies
 serveInvoiceApi :: ServerT InvoiceApi AppM
 serveInvoiceApi = listInvoices :<|> createInvoice :<|> getInvoice
 
+serveQuoteApi :: ServerT QuoteApi AppM
+serveQuoteApi = listQuotes :<|> createQuote :<|> getQuote
+
+serveFixedPriceInvoiceApi :: ServerT FixedPriceInvoiceApi AppM
+serveFixedPriceInvoiceApi = listFixedPriceInvoices :<|> createFixedPriceInvoice :<|> getFixedPriceInvoice
+
 server :: String -> ServerT WebApi AppM
 server webAppLocation =
-  serveDaily :<|> serveWorkTypes :<|> serveMonthlyApi :<|> serveCustomerApi :<|> serveInvoiceApi :<|> serveCompanyApi
+  serveDaily :<|> serveWorkTypes :<|> serveMonthlyApi :<|> serveCustomerApi :<|> serveInvoiceApi :<|> serveCompanyApi :<|> serveQuoteApi :<|> serveFixedPriceInvoiceApi
 
 corsConfig :: Middleware
 corsConfig = cors (const $ Just policy)

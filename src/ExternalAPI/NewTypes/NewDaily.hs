@@ -11,7 +11,7 @@ import           Domain.Daily
 import           GHC.Generics (Generic)
 
 toWorkPack :: UUID -> NewWorkPack -> WorkPack
-toWorkPack uuid (NewWorkPack a w d) = WorkPack uuid a w d 
+toWorkPack uuid (NewWorkPack a w d) = WorkPack uuid a w d
 
 data NewWorkPack = NewWorkPack
   {
@@ -25,6 +25,6 @@ data NewDaily = NewDaily
   { day         :: Day,
     workpacks   :: [NewWorkPack],
     customerId  :: UUID,
-    customerVat :: Text
+    companyVat :: Text
   }
   deriving (FromJSON, ToJSON, Generic)

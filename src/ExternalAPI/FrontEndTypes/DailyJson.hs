@@ -21,21 +21,11 @@ toDaily (DailyJson i d w cId cVat) = Daily i d w cId cVat
 fromDaily :: Daily -> DailyJson
 fromDaily (Daily i d w cId cVat) = DailyJson i d w cId cVat
 
-data DailyId = DailyId
-  { dayId      :: Day,
+data DailyJson = DailyJson
+  { id         :: UUID,
+    day        :: Day,
+    workpacks  :: [WorkPack],
     customerId :: UUID,
     companyVat :: Text
-  }
-  deriving (FromJSON, ToJSON, Generic, Show, Eq)
-
-instance FromHttpApiData DailyId where
-  parseUrlPiece t = first Text.pack $ eitherDecode' $ BSLazy.fromStrict $ TextEnc.encodeUtf8 t
-
-data DailyJson = DailyJson
-  { id          :: UUID,
-    day         :: Day,
-    workpacks   :: [WorkPack],
-    cId         :: UUID,
-    companyName :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)

@@ -1,32 +1,27 @@
 import React from 'react';
 import {
+    ArrayField,
+    ArrayInput,
+    Create,
     Datagrid,
     DateField,
     DateInput,
+    Edit,
+    Error,
     List,
-    ArrayField,
-    TextField,
-    TextInput,
+    Loading,
+    NumberField,
+    NumberInput,
     SelectField,
     SelectInput,
     SimpleForm,
-    UrlField,
-    ShowButton,
-    Loading,
-    Error,
-    Show,
-    SimpleShowLayout,
-    Create,
-    Edit,
     SimpleFormIterator,
-    ArrayInput,
-    NumberField,
-    NumberInput
+    TextField,
+    TextInput
 } from 'react-admin';
-import {Link, BrowserRouter as Router, Route, Switch} from "react-router-dom";
 
 import {useGetList} from "ra-core";
-import {Krondorsoft_invoice} from "./krondorsoft_invoice";
+import {toSelectCompanies, toSelectCustomers} from "./helper";
 
 const toChoices = items => items.map(item => ({id: item, name: item}));
 
@@ -56,15 +51,6 @@ export const DailyList = props => {
     );
 }
 
-
-const toSelectCustomers = customers => customers.map(customer => ({
-    id: customer.id,
-    name: customer.name
-}))
-const toSelectCompanies = companies => companies.map(company => ({
-    id: company.id,
-    name: company.name
-}))
 
 export const DailyCreate = props => {
     const {
@@ -118,9 +104,9 @@ export const DailyCreate = props => {
 
                 </SimpleFormIterator>
             </ArrayInput>
-            <SelectInput source={"cId"} choices={selectCustomers}
+            <SelectInput source={"customerId"} choices={selectCustomers}
                          label={"choose customer"}/>
-            <SelectInput source={"companyName"} choices={selectCompanies}
+            <SelectInput source={"companyVat"} choices={selectCompanies}
                          label={"choose company"}/>
         </SimpleForm>
     </Create>)
@@ -175,9 +161,9 @@ export const DailyEdit = props => {
 
                 </SimpleFormIterator>
             </ArrayInput>
-            <SelectInput source={"cId"} choices={selectCustomers}
+            <SelectInput source={"customerId"} choices={selectCustomers}
                          label={"choose customer"}/>
-            <SelectInput source={"companyName"} choices={selectCompanies}
+            <SelectInput source={"companyVat"} choices={selectCompanies}
                          label={"choose company"}/>
         </SimpleForm>
     </Edit>)

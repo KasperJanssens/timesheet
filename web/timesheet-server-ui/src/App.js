@@ -15,6 +15,12 @@ import {
 } from "./Customer";
 import {InvoiceCreate, InvoiceList, InvoiceShow} from "./invoices";
 import {CompanyCreate, CompanyList, CompanyShow} from "./Company";
+import {QuoteCreate, QuoteList, QuoteShow} from "./quotes";
+import {
+    FixedPriceInvoiceCreate,
+    FixedPriceInvoiceList,
+    FixedPriceInvoiceShow
+} from "./fixedPriceInvoices";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -30,6 +36,11 @@ const App = () => (
         <Resource id="monthly" name="monthly" list={MonthlyList} show={MonthlyShow}/>
         <Resource id={"invoice"} name={"invoice"} list={InvoiceList} create={InvoiceCreate}
                   show={InvoiceShow}/>
+        <Resource id={"quote"} name={"quote"} list={QuoteList} create={QuoteCreate}
+                  show={QuoteShow}/>
+        <Resource id={"fixedPriceInvoice"} name={"fixedPriceInvoice"} list={FixedPriceInvoiceList}
+                  create={FixedPriceInvoiceCreate}
+                  show={FixedPriceInvoiceShow} options={{ label: 'Fixed Price Invoice' }}/>
         <Resource id={"customer"} name={"customer"} list={CustomerList} show={CustomerShow}
                   create={CustomerCreate}/>
         <Resource id={"company"} name={"company"} list={CompanyList} show={CompanyShow}
