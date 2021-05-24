@@ -17,6 +17,8 @@ data Quote = Quote
     vatReport :: VATReport,
     customer  :: Customer,
     company   :: Company,
-    description :: Text
+    description :: Text,
+    termsOfDelivery :: Text,
+    dayOfQuote :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

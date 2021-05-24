@@ -263,13 +263,13 @@ admin initialState req respond = do
     respond
 
 --TODO turn this into env vars read or so later on
-defaultDatabaseConnectionString :: ConnectionString
-defaultDatabaseConnectionString = Database.conn "localhost" "timesheetdb" "postgres" "mysecretpassword" 5432
+defaultDatabaseConnectionString :: Int -> ConnectionString
+defaultDatabaseConnectionString = Database.conn "localhost" "timesheetdb" "postgres" "mysecretpassword"
 
-start :: Int -> IO ()
-start port = withStdoutLogger $ \aplogger -> do
+start :: Int -> Int -> IO ()
+start port dbPort = withStdoutLogger $ \aplogger -> do
   initialMonthlyMap <- newTVarIO Map.empty
-  let connectionString = defaultDatabaseConnectionString
+  let connectionString = defaultDatabaseConnectionString dbPort
   --  TODO check how to shut down gracefully when the server shuts down. Some kind of shutdown hook will likely exist. Maybe a withPool around this whole snippet is the best?
   poel <- runStderrLoggingT $ createPostgresqlPool connectionString 10
   let initialState = State initialMonthlyMap poel

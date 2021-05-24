@@ -13,6 +13,7 @@ data NewQuote = NewQuote
   { total      :: Double,
     customerId :: UUID,
     companyId  :: Text,
-    description :: Text
+    description :: Text,
+    termsOfDelivery :: Text
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

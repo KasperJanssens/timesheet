@@ -17,7 +17,8 @@ import {
     SimpleForm,
     SimpleFormIterator,
     TextField,
-    TextInput
+    TextInput,
+    useLocale
 } from 'react-admin';
 
 import {useGetList} from "ra-core";
@@ -36,7 +37,7 @@ export const DailyList = props => {
     return (
         <List {...props}>
             <Datagrid rowClick="show">
-                <DateField source={"day"} locales="nl-BE"/>
+                <DateField source={"day"} locales={"nl-BE"}/>
 
                 <ArrayField source="workpacks" label="WorkPacks">
                     <Datagrid>
@@ -94,7 +95,7 @@ export const DailyCreate = props => {
 
     return (<Create {...props}>
         <SimpleForm>
-            <DateInput source={"day"}/>
+            <DateInput source={"day"}  locales={"nl-BE"}/>
             <ArrayInput source="workpacks" label="WorkPacks">
                 <SimpleFormIterator>
                     <SelectInput source={"workType"} choices={Object.values(tps)}
@@ -151,7 +152,7 @@ export const DailyEdit = props => {
 
     return (<Edit {...props}>
         <SimpleForm>
-            <DateInput source={"day"}/>
+            <DateInput source={"day"}  locales={"nl-BE"}/>
             <ArrayInput source="workpacks" label="WorkPacks">
                 <SimpleFormIterator>
                     <SelectInput source={"workType"} choices={Object.values(worktypes)}

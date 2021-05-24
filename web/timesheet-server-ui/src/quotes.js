@@ -86,10 +86,28 @@ export const QuoteCreate = (props) => {
                 <SelectInput source={"customerId"} choices={selectCustomers} />
                 <NumberInput source="total"  label={"Fixed price total (excluding vat, in euros)"}/>
                 <TextInput source={"description"} label={"Description of work"}/>
+                <TextInput source={"termsOfDelivery"} label={"Terms of delivery"}/>
             </SimpleForm>
         </Create>)
 }
 
+const ShowQuoteButton = ({ record }) => {
+    return (
+
+        <Link to={{
+            pathname: '/quote_paper',
+            state: {
+                customer: record.customer,
+                dayOfQuote: record.dayOfQuote,
+                company: record.company,
+                vatReport : record.vatReport,
+                quoteNumber : record.quoteId,
+                description : record.description,
+                termsOfDelivery : record.termsOfDelivery
+            }
+        }} style={{color: 'blue'}} activeStyle={{color: 'red'}} >Show Quote</Link>
+
+    )};
 
 export const QuoteShow = (props) => {
     const {
@@ -124,10 +142,13 @@ export const QuoteShow = (props) => {
                 <TextField source={"vatReport.totalExcl"} label={"Total excluding VAT"}/>
                 <TextField source={"vatReport.totalVAT"} label={"VAT amount"}/>
                 <TextField source={"vatReport.total"} label={"total with VAT"}/>
+                <TextField source={"description"} label={"Description"}/>
+                <TextField source={"termsOfDelivery"} label={"Terms of delivery"}/>
                 <SelectField source={"customer.id"} choices={selectCustomers}
-                             label={"choose customer"}/>
+                             label={"Customer"}/>
                 <SelectField source={"company.vatNumber"} choices={selectCompanies}
-                             label={"choose company"}/>
+                             label={"Company"}/>
+                <ShowQuoteButton/>
             </SimpleShowLayout>
         </Show>)
 }

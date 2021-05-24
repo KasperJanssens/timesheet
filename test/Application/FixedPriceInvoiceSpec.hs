@@ -47,7 +47,7 @@ spec = around withDatabase $
       invoiceOrErr <- runAppM state $ do
         customer <- CustomerService.insert NewCustomer.dummy
         company <- CompanyService.insert NewCompany.dummy
-        quote <- QuoteService.insert (NewQuote price (Customer.id customer) (Company.vatNumber company) "zever")
+        quote <- QuoteService.insert (NewQuote price (Customer.id customer) (Company.vatNumber company) "zever" "vree rap")
         fixedPriceInvoice <- FixedPriceInvoiceService.insertFromQuote (Quote.id quote)
         FixedPriceInvoiceService.get (FixedPriceInvoice.id fixedPriceInvoice)
       invoiceOrErr `shouldSatisfy` isRight

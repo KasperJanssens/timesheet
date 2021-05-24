@@ -18,9 +18,11 @@ import           Control.Monad.IO.Class                              (MonadIO,
 import           Control.Monad.Reader                                (ReaderT)
 import           Data.Maybe                                          (fromJust)
 import           Data.Text                                           (Text)
+import qualified Data.Text                                           as Text
 import           Data.Text.Internal.Builder                          (toLazyText)
 import           Data.Text.Lazy                                      (toStrict)
 import           Data.Text.Lazy.Builder.Int                          (decimal)
+import           Data.Time.Calendar                                  (Day, showGregorian)
 import           Data.UUID                                           (UUID)
 import qualified Data.UUID.V4                                        as UUID
 import           Database.Persist.Postgresql
@@ -44,7 +46,9 @@ QuoteRecord
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     quoteFollowUpNumber Int
+    dayOfQuote Day
     description Text
+    termsOfDelivery Text
     UniqueQuoteBusinessId businessId
     invoiceLink FixedPriceInvoiceRecordId Maybe
     deriving Show
@@ -56,12 +60,12 @@ allQuotes = []
 countQuotes :: MonadIO m => ReaderT SqlBackend m Int
 countQuotes = count allQuotes
 
-createQuoteRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> Int -> Double -> Text -> QuoteRecord
-createQuoteRecord uuid customerId companyId followUpNumber total description =
-  QuoteRecord (BusinessId uuid) total customerId companyId  followUpNumber description Nothing
+createQuoteRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> Int -> Double -> Day -> Text ->  Text -> QuoteRecord
+createQuoteRecord uuid customerId companyId followUpNumber total dayOfQuote termsOfDelivery description =
+  QuoteRecord (BusinessId uuid) total customerId companyId followUpNumber dayOfQuote description termsOfDelivery Nothing
 
-toQuote' :: UUID -> Int -> Double -> Text -> CustomerRecord -> CompanyRecord -> Quote
-toQuote' id invoiceId totalExcl description customerRecord companyRecord =
+toQuote' :: UUID -> Int -> Double -> Day -> Text -> Text ->  CustomerRecord -> CompanyRecord -> Quote
+toQuote' id invoiceId totalExcl dayOfQuote termsOfDelivery description  customerRecord companyRecord =
   let total = totalExcl * 1.21
    in let totalVat = total - totalExcl
        in let customer = CustomerRepository.to customerRecord
@@ -73,9 +77,11 @@ toQuote' id invoiceId totalExcl description customerRecord companyRecord =
                     customer
                     company
                     description
+                    termsOfDelivery
+                    (Text.pack . showGregorian $ dayOfQuote)
 
 toQuote :: QuoteRecord -> CustomerRecord -> CompanyRecord -> Quote
-toQuote (QuoteRecord (BusinessId id) totalExcl _ _  quoteId description _) = toQuote' id quoteId totalExcl description
+toQuote (QuoteRecord (BusinessId id) totalExcl _ _ quoteId dayOfQuote description termsOfDelivery _) = toQuote' id quoteId totalExcl dayOfQuote description termsOfDelivery
 
 getQuote :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Quote)
 getQuote uuid = do
@@ -93,7 +99,7 @@ getQuote uuid = do
     maybeEntity
 
 retrieveCustomer :: MonadIO m => QuoteRecord -> ReaderT SqlBackend m Quote
-retrieveCustomer quoteRecord@(QuoteRecord _ _ customerRecordId companyRecordId _ _ _) = do
+retrieveCustomer quoteRecord@(QuoteRecord _ _ customerRecordId companyRecordId _ _ _ _ _) = do
   maybeCustomer <- selectFirst [CustomerRecordId ==. customerRecordId] []
   maybeCompany <- selectFirst [CompanyRecordId ==. companyRecordId] []
   let customerRecord = entityVal . fromJust $ maybeCustomer
@@ -111,8 +117,8 @@ listNonInvoiced = do
   mapM (retrieveCustomer . entityVal) records
 
 --TODO companyId instead of companyVat
-insertQuote :: MonadIO m => UUID -> Text -> Double -> Text ->ReaderT SqlBackend m Quote
-insertQuote customerId companyVat total description = do
+insertQuote :: MonadIO m => UUID -> Text -> Double -> Day -> Text -> Text ->  ReaderT SqlBackend m Quote
+insertQuote customerId companyVat total today termsOfDelivery description  = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
   maybeCompany <- getBy . UniqueCompanyVAT $ companyVat
   newFollowUpNumber <- CompanyRepository.nextQuoteNumber companyVat
@@ -122,9 +128,10 @@ insertQuote customerId companyVat total description = do
   let companyRecord = fromJust maybeCompany
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
-  let quoteRecord = createQuoteRecord uuid customerRecordId companyRecordId newFollowUpNumber total description
+  
+  let quoteRecord = createQuoteRecord uuid customerRecordId companyRecordId newFollowUpNumber total today termsOfDelivery description
   _ <- insert quoteRecord
-  return $ toQuote' uuid newFollowUpNumber total description (entityVal customerRecord) (entityVal companyRecord)
+  return $ toQuote' uuid newFollowUpNumber total today termsOfDelivery description (entityVal customerRecord) (entityVal companyRecord)
 
 linkInvoice :: MonadIO m => UUID -> UUID -> ReaderT SqlBackend m ()
 linkInvoice invoiceId quoteId = do

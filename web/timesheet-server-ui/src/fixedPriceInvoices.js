@@ -63,10 +63,9 @@ export const FixedPriceInvoiceList = props => {
 
 const ShowInvoiceButton = ({ record }) => {
     return (
-        <div>
-            {/*<ShowButton basePath="/invoice" label="Show invoice" record={record} />*/}
+
             <Link to={{
-                pathname: '/krondorsoft_fixed_price_invoice',
+                pathname: '/fixed_price_invoice',
                 state: {
                     today: "tis vandaag he",
                     month: record.month,
@@ -76,10 +75,11 @@ const ShowInvoiceButton = ({ record }) => {
                     totalDays: record.totalDays,
                     invoiceNumber : record.invoiceNumber,
                     dayOfInvoice  : record.dayOfInvoice,
-                    dayOfPayment  : record.dayOfPayment
+                    dayOfPayment  : record.dayOfPayment,
+                    description : record.description
                 }
-            }} >Show Krondorsoft_invoice</Link>
-        </div>
+            }} style={{color: 'blue'}} activeStyle={{color: 'red'}} >Show Invoice</Link>
+
     )};
 
 const ChooseQuoteOrFixedPrice = (props) => {

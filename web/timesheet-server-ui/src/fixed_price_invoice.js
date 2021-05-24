@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class KrondorsoftFixedPriceInvoice extends React.Component {
+export class FixedPriceInvoice extends React.Component {
 
     constructor(props) {
         super(props)
@@ -10,7 +10,7 @@ export class KrondorsoftFixedPriceInvoice extends React.Component {
     render() {
         return <div class="page invoice">
             <header>
-                <img class="logo" src="krondorsoft.png" type="image/svg+xml"/>
+                <img class="logo" src={this.props.location.state.company.name === "Propellant" ? "propellant.png" : "krondorsoft.png"} type="image/svg+xml"/>
                 <div class="invoice-data">
                     <span id="vandaag">{this.props.location.state.dayOfInvoice}</span>
                     <h1>Factuur</h1>
@@ -47,7 +47,7 @@ export class KrondorsoftFixedPriceInvoice extends React.Component {
                             </thead>
                             <tbody>
                             <tr>
-                                 <td>First month of care package</td>
+                                 <td>{this.props.location.state.description}</td>
                                  <td id="totaalZonderBtw" className="amount">{this.props.location.state.vatReport.totalExcl}</td>
 
                             </tr>
