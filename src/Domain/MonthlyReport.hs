@@ -28,7 +28,8 @@ data VATReport = VATReport
 
 data ReportEntry = ReportEntry
   { omschrijving :: Text,
-    aantalUur    :: Double
+    aantalUur    :: Double,
+    subTotaal :: Double
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
@@ -63,7 +64,7 @@ createEntry workPacks =
    in let subTotal = totalHours * standaardTarief
        in let maybeHead = headMay workPacks
            in let description = maybe "" createDescription maybeHead
-               in ReportEntry description totalHours
+               in ReportEntry description totalHours subTotal
 
 createEntries :: [WorkPack] -> [ReportEntry]
 createEntries workPacks =

@@ -57,8 +57,8 @@ InvoiceRecord
     deriving Show
 |]
 
-toReportEntry :: ReportEntryRecord -> ReportEntry
-toReportEntry (ReportEntryRecord d h _) = ReportEntry d h
+toReportEntry :: Double -> ReportEntryRecord -> ReportEntry
+toReportEntry rate (ReportEntryRecord d h _) = ReportEntry d h (rate * h)
 
 allInvoices :: [Filter InvoiceRecord]
 allInvoices = []
@@ -71,7 +71,7 @@ createInvoiceRecord businessId customerRecordId companyRecordId (SpecificMonth y
   InvoiceRecord (BusinessId businessId) m (fromIntegral y) today paymentDay customerRecordId companyRecordId followUpNumber
 
 createReportEntryRecord :: InvoiceRecordId -> ReportEntry -> ReportEntryRecord
-createReportEntryRecord invoiceRecordId (ReportEntry desc h) = ReportEntryRecord desc h invoiceRecordId
+createReportEntryRecord invoiceRecordId (ReportEntry desc h _) = ReportEntryRecord desc h invoiceRecordId
 
 insertReports :: (MonadIO m) => InvoiceRecordId -> [ReportEntry] -> ReaderT SqlBackend m [ReportEntryRecord]
 insertReports invoiceRecordId entries = do
@@ -84,13 +84,14 @@ createMonthlyReport (InvoiceRecord _ m y dayOfIn dayOfPay _ _ i) reportEntryReco
   let totalHours = (sum $ reportEntryRecordHours <$> reportEntryRecords)
    in let totalDays = totalHours / 8
        in --   TODO Handle this exception better.
-          let totalExcl = totalHours * (fromJust . customerRecordHourlyRate $ customerRecord)
+         let hourlyRate = (fromJust . customerRecordHourlyRate $ customerRecord) in
+          let totalExcl = totalHours * hourlyRate
            in let total = 1.21 * totalExcl
                in let totalVAT = total - totalExcl
                    in MonthlyReport
                         (SpecificMonth (fromIntegral y) m)
                         totalDays
-                        (toReportEntry <$> reportEntryRecords)
+                        (toReportEntry hourlyRate <$> reportEntryRecords)
                         (VATReport totalExcl totalVAT total)
                         (toTextMonth m)
                         (toStrict . toLazyText . decimal $ i)

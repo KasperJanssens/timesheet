@@ -82,7 +82,8 @@ export const DailyCreate = props => {
         page: 1,
         perPage: 1000
     }, {}, {});
-
+    const locale = useLocale()
+    console.log(locale)
     if (loadingWorkTypes) return <Loading/>;
     if (errorWorkTypes) return <Error error={"Could not load work types"}/>;
     if (loadingCompanies) return <Loading/>;
@@ -95,7 +96,7 @@ export const DailyCreate = props => {
 
     return (<Create {...props}>
         <SimpleForm>
-            <DateInput source={"day"}  locales={"nl-BE"}/>
+            <DateInput source={"day"}  locales={"nl"}/>
             <ArrayInput source="workpacks" label="WorkPacks">
                 <SimpleFormIterator>
                     <SelectInput source={"workType"} choices={Object.values(tps)}

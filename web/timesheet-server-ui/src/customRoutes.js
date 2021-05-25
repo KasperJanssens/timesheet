@@ -1,11 +1,11 @@
 import * as React from "react";
 import {Route} from 'react-router-dom';
-import {KrondorsoftInvoice} from './krondorsoft_invoice';
+import {InvoicePaper} from './invoice_paper';
 import {FixedPriceInvoice} from './fixed_price_invoice';
 import {QuotePaper} from "./quote_paper";
 
 export default [
-    <Route exact path="/krondorsoft_invoice" render={(props) => <KrondorsoftInvoice {...props}
+    <Route exact path="/invoice_paper" render={(props) => <InvoicePaper {...props}
     />} noLayout/>,
     <Route exact path="/fixed_price_invoice" render={(props) => <FixedPriceInvoice {...props}
     />} noLayout/>,

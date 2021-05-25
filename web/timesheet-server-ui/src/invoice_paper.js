@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class KrondorsoftInvoice extends React.Component {
+export class InvoicePaper extends React.Component {
 
     constructor(props) {
         super(props)
@@ -12,7 +12,7 @@ export class KrondorsoftInvoice extends React.Component {
             this.tableElems.push(<tr>
                 <td>{reportEntry.omschrijving}</td>
                 <td id="aantalUren" className="amount">{reportEntry.aantalUur}</td>
-                <td id="tarief" className="amount">{reportEntry.tarief}</td>
+                <td id="tarief" className="amount">{props.location.state.customer.hourlyRate}</td>
                 <td id="totaalZonderBtw" className="amount">{reportEntry.subTotaal}</td>
             </tr>)
         }
@@ -21,7 +21,9 @@ export class KrondorsoftInvoice extends React.Component {
     render() {
         return <div class="page invoice">
             <header>
-                <img class="logo" src="krondorsoft.png" type="image/svg+xml"/>
+                <img class="logo"
+                     src={this.props.location.state.company.name === "Propellant" ? "propellant.png" : "krondorsoft.png"}
+                     type="image/svg+xml"/>
                 <div class="invoice-data">
                     <span id="vandaag">{this.props.location.state.dayOfInvoice}</span>
                     <h1>Factuur</h1>
@@ -48,7 +50,8 @@ export class KrondorsoftInvoice extends React.Component {
                     </section>
                 </div>
                 <section class="payment-info">
-                    <p>Gelieve te betalen voor <strong id="vervalDatum">{this.props.location.state.dayOfPayment}</strong> op
+                    <p>Gelieve te betalen voor <strong
+                        id="vervalDatum">{this.props.location.state.dayOfPayment}</strong> op
                         het rekeningnummer <strong>BE23
                             6451 2777
                             4091</strong> (BIC: JVBA BE 22 )</p>
@@ -87,11 +90,13 @@ export class KrondorsoftInvoice extends React.Component {
                     <table>
                         <tr>
                             <td>totaal aantal dagen</td>
-                            <td id="totaalAantalDagen" class="amount">{this.props.location.state.totalDays}</td>
+                            <td id="totaalAantalDagen"
+                                class="amount">{this.props.location.state.totalDays}</td>
                         </tr>
                         <tr>
                             <td>totaal excl BTW</td>
-                            <td id="totaalExclusiefBtw" class="amount">{this.props.location.state.vatReport.totalExcl}</td>
+                            <td id="totaalExclusiefBtw"
+                                class="amount">{this.props.location.state.vatReport.totalExcl}</td>
                         </tr>
                         <tr>
                             <td>BTW tarief</td>
@@ -99,11 +104,13 @@ export class KrondorsoftInvoice extends React.Component {
                         </tr>
                         <tr>
                             <td>BTW bedrag</td>
-                            <td id="btwBedrag" class="amount">{this.props.location.state.vatReport.totalVAT}</td>
+                            <td id="btwBedrag"
+                                class="amount">{this.props.location.state.vatReport.totalVAT}</td>
                         </tr>
                         <tr>
                             <td><strong>totaal</strong></td>
-                            <td id="totaalMetBtw" class="amount"><strong>{this.props.location.state.vatReport.total}</strong></td>
+                            <td id="totaalMetBtw" class="amount">
+                                <strong>{this.props.location.state.vatReport.total}</strong></td>
                         </tr>
                     </table>
                 </section>

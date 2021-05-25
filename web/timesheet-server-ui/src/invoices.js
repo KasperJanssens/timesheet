@@ -12,34 +12,37 @@ import {
 import React from "react";
 import {Link} from "react-router-dom";
 import {useGetList} from "ra-core";
-import {IsoOutlined} from "@material-ui/icons";
 
-const ShowInvoiceButton = ({ record }) => {
+const ShowInvoiceButton = ({record}) => {
     return (
         <div>
-             {/*<ShowButton basePath="/invoice" label="Show invoice" record={record} />*/}
-             <Link to={{
-                 pathname: '/krondorsoft_invoice',
-                 state: {
-                     today: "tis vandaag he",
-                     month: record.month,
-                     reportEntries: record.reportEntries,
-                     vatReport : record.vatReport,
-                     totalDays: record.totalDays,
-                     invoiceNumber : record.invoiceNumber,
-                     dayOfInvoice  : record.dayOfInvoice,
-                     dayOfPayment  : record.dayOfPayment
-                 }
-             }} >Show Krondorsoft_invoice</Link>
-         </div>
-     )};
+            <Link to={{
+                pathname: '/invoice_paper',
+                state: {
+                    month: record.specificMonth.m,
+                    reportEntries: record.monthlyReport.reportEntries,
+                    vatReport: record.monthlyReport.vatReport,
+                    totalDays: record.monthlyReport.totalDays,
+                    invoiceNumber: record.monthlyReport.invoiceNumber,
+                    dayOfInvoice: record.monthlyReport.dayOfInvoice,
+                    dayOfPayment: record.monthlyReport.dayOfPayment,
+                    company : record.company,
+                    customer : record.customer
+                }
+            }} style={{color: 'blue'}} activeStyle={{color: 'red'}}>Show Invoice</Link>
+        </div>
+    )
+};
 
 export const InvoiceList = props => {
     return (
         <List {...props}>
             <Datagrid rowClick="show">
-                <TextField source={"year"}/>
-                <TextField source={"month"}/>
+                <TextField source={"specificMonth.y"} label={"year"}/>
+                <TextField source={"specificMonth.m"} label={"month"}/>
+                <TextField source={"customer.name"} label={"customer"}/>
+                <TextField source={"company.name"} label={"company"}/>
+                <TextField source={"monthlyReport.invoiceNumber"} label={"invoice number"}/>
             </Datagrid>
         </List>
     );
@@ -58,11 +61,14 @@ export const InvoiceCreate = (props) => {
     if (errorMonthlies) return <Error error={"Could not load work types"}/>;
     const monthlyValues = Object.values(monthlies)
     // monthlyValues.forEach((item, n, r) => console.log(item))
-    const monthlyChoices = monthlyValues.map(item => ({id: item.id, name: item.year + " " + item.month + " " + item.company.name + " " + item.customer.name}));
+    const monthlyChoices = monthlyValues.map(item => ({
+        id: item.id,
+        name: item.year + " " + item.month + " " + item.company.name + " " + item.customer.name
+    }));
     return (
         <Create  {...props}>
             <SimpleForm>
-                <SelectInput source={"monthlyId"} choices={monthlyChoices} />
+                <SelectInput source={"monthlyId"} choices={monthlyChoices}/>
             </SimpleForm>
         </Create>)
 }
@@ -72,8 +78,14 @@ export const InvoiceShow = (props) => {
     return (
         <Show  {...props}>
             <SimpleShowLayout>
-                <TextField source={"invoiceNumber"} label={"Invoice number"}/>
-                <ShowInvoiceButton />
+                <TextField source={"specificMonth.y"} label={"year"}/>
+                <TextField source={"specificMonth.m"} label={"month"}/>
+                <TextField source={"customer.name"} label={"customer"}/>
+                <TextField source={"company.name"} label={"company"}/>
+                <TextField source={"monthlyReport.invoiceNumber"} label={"invoice number"}/>
+                <TextField source={"monthlyReport.vatReport.totalExcl"} label={"total excl vat"}/>
+                <TextField source={"monthlyReport.vatReport.total"} label={"total"}/>
+                <ShowInvoiceButton/>
             </SimpleShowLayout>
         </Show>)
 }
