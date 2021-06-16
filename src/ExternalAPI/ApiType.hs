@@ -1,33 +1,34 @@
-{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ExternalAPI.ApiType where
 
-import qualified Data.Aeson                                as Aeson
-import           Data.Text                                 (Text)
-import           Data.Time                                 (Day)
-import           Data.UUID                                 (UUID)
-import           Domain.Company
-import           Domain.Customer
-import           Domain.Daily
-import           Domain.FixedPriceInvoice
-import           Domain.Invoice
-import           Domain.Monthly
-import           Domain.MonthlyId
-import           Domain.MonthlyReport
-import           Domain.Quote
-import           ExternalAPI.FrontEndTypes.DailyJson
-import           ExternalAPI.FrontEndTypes.MonthlyListJson
-import           ExternalAPI.NewTypes.NewCompany
-import           ExternalAPI.NewTypes.NewCustomer
-import           ExternalAPI.NewTypes.NewDaily
-import           ExternalAPI.NewTypes.NewFixedPriceInvoice
-import           ExternalAPI.NewTypes.NewInvoice
-import           ExternalAPI.NewTypes.NewQuote
-import           ExternalAPI.WorkTypeJson
-import           Numeric.Natural                           (Natural)
-import           Servant
+import qualified Data.Aeson as Aeson
+import Data.Text (Text)
+import Data.Time (Day)
+import Data.UUID (UUID)
+import Domain.Company
+import Domain.Customer
+import Domain.Daily
+import Domain.ExternalBusinessId
+import Domain.FixedPriceInvoice
+import Domain.Invoice
+import Domain.Monthly
+import Domain.MonthlyId
+import Domain.MonthlyReport
+import Domain.Quote
+import ExternalAPI.FrontEndTypes.DailyJson
+import ExternalAPI.FrontEndTypes.MonthlyListJson
+import ExternalAPI.NewTypes.NewCompany
+import ExternalAPI.NewTypes.NewCustomer
+import ExternalAPI.NewTypes.NewDaily
+import ExternalAPI.NewTypes.NewFixedPriceInvoice
+import ExternalAPI.NewTypes.NewInvoice
+import ExternalAPI.NewTypes.NewQuote
+import ExternalAPI.WorkTypeJson
+import Numeric.Natural (Natural)
+import Servant
 
 type XTotalCountHeader v = Headers '[Header "X-Total-Count" Int] v
 
@@ -38,7 +39,7 @@ instance ToHttpApiData QuoteFilter where
 
 instance FromHttpApiData QuoteFilter where
   parseUrlPiece "uninvoiced" = Right Uninvoiced
-  parseUrlPiece _            = Left "did not recognize fermentor filter"
+  parseUrlPiece _ = Left "did not recognize fermentor filter"
 
 type DailyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [DailyJson])
@@ -60,7 +61,7 @@ type CustomerApi =
 type CompanyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Company])
     :<|> ReqBody '[JSON] NewCompany :> Post '[JSON] Company
-    :<|> Capture "id" UUID :> Get '[JSON] Company
+    :<|> Capture "id" (ExternalBusinessId CompanyService) :> Get '[JSON] Company
 
 type InvoiceApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Invoice])

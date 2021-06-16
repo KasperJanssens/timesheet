@@ -10,6 +10,9 @@ import           ExternalAPI.NewTypes.NewCompany
 import           GHC.Natural                               (Natural)
 import qualified InternalAPI.Persistence.CompanyRepository as CompanyRepository
 import qualified InternalAPI.Persistence.Database          as DB
+import Domain.ExternalBusinessId (ExternalBusinessId, CompanyService)
+
+
 
 list :: Natural -> Natural -> AppM (Int, [Company])
 list from to = do
@@ -26,11 +29,11 @@ insert newCompany = do
   DB.executeInPool pool $ do
     CompanyRepository.insertCompany uuid newCompany
 
-get :: UUID -> AppM (Maybe Company)
-get uuid = do
+get :: ExternalBusinessId CompanyService -> AppM (Maybe Company)
+get externalBusinessId = do
   pool <- asks poel
   DB.executeInPool pool $ do
-    CompanyRepository.getCompany uuid
+    CompanyRepository.getCompany externalBusinessId
 
 listAll :: AppM [Company]
 listAll = do

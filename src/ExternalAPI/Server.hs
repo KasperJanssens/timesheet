@@ -65,6 +65,7 @@ import           Network.Wai.Logger                        (withStdoutLogger)
 import           Network.Wai.Middleware.Cors
 import           Numeric.Natural                           (Natural)
 import           Servant
+import Domain.ExternalBusinessId (ExternalBusinessId, CompanyService)
 
 runWithState :: State -> AppM a -> Handler a
 runWithState s x = do
@@ -163,7 +164,7 @@ listCompany _ _ = do
   allCompanies <- CompanyService.listAll
   return $ addHeader (length allCompanies) allCompanies
 
-getCompany :: UUID -> AppM Company
+getCompany :: ExternalBusinessId CompanyService -> AppM Company
 getCompany businessId = do
   maybeRes <- CompanyService.get businessId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) return maybeRes
@@ -224,9 +225,6 @@ getQuote :: UUID -> AppM Quote
 getQuote quoteId = do
   maybeQuote <- QuoteService.get quoteId
   maybe (throwError $ err404 {errBody = "Could not find quote"}) return maybeQuote
-
---getMonthly :: SpecificMonth -> AppM MonthlyReport
---getMonthly = MonthlyService.getReport
 
 serveMonthlyApi :: ServerT MonthlyApi AppM
 serveMonthlyApi = listMonthlies

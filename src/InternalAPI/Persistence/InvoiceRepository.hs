@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -13,10 +14,12 @@
 
 module InternalAPI.Persistence.InvoiceRepository where
 
+import           Control.Exception.Base                     (throw)
 import           Control.Monad                              (void)
+import           Control.Monad.Error.Class                  (MonadError)
+import           Control.Monad.Except                       (ExceptT)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
-import           Data.Maybe                                 (fromJust)
 import           Data.Text                                  (Text)
 import qualified Data.Text                                  as Text
 import           Data.Text.Internal.Builder                 (toLazyText)
@@ -24,17 +27,18 @@ import           Data.Text.Lazy                             (toStrict)
 import           Data.Text.Lazy.Builder.Int                 (decimal)
 import           Data.Time.Calendar                         (Day, showGregorian)
 import           Data.UUID                                  (UUID)
+import qualified Data.UUID.V4                               as UUID
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Invoice                             (Invoice (..))
 import           Domain.Monthly
 import           Domain.MonthlyReport
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
-import           InternalAPI.Persistence.CompanyRepository hiding (to)
+import           InternalAPI.Persistence.CompanyRepository  hiding (to)
+import qualified InternalAPI.Persistence.CompanyRepository  as CompanyRepository
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
-import qualified InternalAPI.Persistence.CompanyRepository as CompanyRepository
-import qualified Data.UUID.V4 as UUID
+import           InternalAPI.Persistence.RepositoryError    (RepositoryError (..))
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateInvoice"]
@@ -79,30 +83,32 @@ insertReports invoiceRecordId entries = do
   void $ insertMany records
   return records
 
-createMonthlyReport :: InvoiceRecord -> [ReportEntryRecord] -> CustomerRecord -> MonthlyReport
+createMonthlyReport :: (MonadIO m) => InvoiceRecord -> [ReportEntryRecord] -> CustomerRecord -> m MonthlyReport
 createMonthlyReport (InvoiceRecord _ m y dayOfIn dayOfPay _ _ i) reportEntryRecords customerRecord =
   let totalHours = (sum $ reportEntryRecordHours <$> reportEntryRecords)
    in let totalDays = totalHours / 8
-       in --   TODO Handle this exception better.
-         let hourlyRate = (fromJust . customerRecordHourlyRate $ customerRecord) in
+       in do
+          hourlyRate <- maybe (throw $ RepositoryError "Customer has no hourly rate associated with it") return (customerRecordHourlyRate customerRecord)
           let totalExcl = totalHours * hourlyRate
-           in let total = 1.21 * totalExcl
-               in let totalVAT = total - totalExcl
-                   in MonthlyReport
-                        (SpecificMonth (fromIntegral y) m)
-                        totalDays
-                        (toReportEntry hourlyRate <$> reportEntryRecords)
-                        (VATReport totalExcl totalVAT total)
-                        (toTextMonth m)
-                        (toStrict . toLazyText . decimal $ i)
-                        (Text.pack . showGregorian $ dayOfIn)
-                        (Text.pack . showGregorian $ dayOfPay)
+          let total = 1.21 * totalExcl
+          let totalVAT = total - totalExcl
+          return $ MonthlyReport
+                            (SpecificMonth (fromIntegral y) m)
+                            totalDays
+                            (toReportEntry hourlyRate <$> reportEntryRecords)
+                            (VATReport totalExcl totalVAT total)
+                            (toTextMonth m)
+                            (toStrict . toLazyText . decimal $ i)
+                            (Text.pack . showGregorian $ dayOfIn)
+                            (Text.pack . showGregorian $ dayOfPay)
 
-to :: [ReportEntryRecord] -> CustomerRecord -> CompanyRecord -> InvoiceRecord -> Invoice
+to :: (MonadIO m) => [ReportEntryRecord] -> CustomerRecord -> CompanyRecord -> InvoiceRecord -> m Invoice
 to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord (BusinessId businessId) m y dayOfIn dayOfPay _ _ i) =
-  let customer = CustomerRepository.to customerRecord in
-  let company = CompanyRepository.to companyRecord 
-   in Invoice businessId (SpecificMonth y m) (createMonthlyReport invoiceRecord reportEntries customerRecord) customer company
+  let customer = CustomerRepository.to customerRecord
+   in let company = CompanyRepository.to companyRecord in
+     do
+       monthlyReport <- createMonthlyReport invoiceRecord reportEntries customerRecord
+       return $ Invoice businessId (SpecificMonth y m) monthlyReport customer company
 
 selectMaxFollowUpNumber :: (MonadIO m) => ReaderT SqlBackend m (Maybe Int)
 selectMaxFollowUpNumber = do
@@ -115,24 +121,26 @@ fetchReportEntryRecords invoiceEntity = do
   reportEntities <- selectList [ReportEntryRecordInvoiceLink ==. invoiceDBId] []
   return $ entityVal <$> reportEntities
 
-findCustomer :: (MonadIO m) => Entity InvoiceRecord -> ReaderT SqlBackend m CustomerRecord
+findCustomer :: (MonadIO m) => Entity InvoiceRecord -> ReaderT SqlBackend m (Maybe CustomerRecord)
 findCustomer invoiceEntity = do
   let invoiceRecord = entityVal invoiceEntity
   maybeCustomer <- selectFirst [CustomerRecordId ==. invoiceRecordCustomerLink invoiceRecord] []
-  return $ entityVal . fromJust $ maybeCustomer
+  return $ entityVal <$> maybeCustomer
 
-findCompany :: (MonadIO m) => Entity InvoiceRecord -> ReaderT SqlBackend m CompanyRecord
+findCompany :: (MonadIO m) => Entity InvoiceRecord -> ReaderT SqlBackend m (Maybe CompanyRecord)
 findCompany invoiceEntity = do
   let invoiceRecord = entityVal invoiceEntity
   maybeCompany <- selectFirst [CompanyRecordId ==. invoiceRecordCompanyLink invoiceRecord] []
-  return $ entityVal . fromJust $ maybeCompany
+  return $ entityVal <$> maybeCompany
 
 fetchDependencies :: MonadIO m => Entity InvoiceRecord -> ReaderT SqlBackend m Invoice
 fetchDependencies invoiceRecordEntity = do
-  customerRecord <- findCustomer invoiceRecordEntity
-  companyRecord <- findCompany invoiceRecordEntity
+  maybeCustomerRecord <- findCustomer invoiceRecordEntity
+  maybeCompanyRecord <- findCompany invoiceRecordEntity
   reportEntryRecords <- fetchReportEntryRecords invoiceRecordEntity
-  return $ to reportEntryRecords customerRecord companyRecord (entityVal invoiceRecordEntity)
+  customerRecord <- liftIO $ maybe (throw $ RepositoryError "Could not retrieve customer dependency of invoice") return maybeCustomerRecord
+  companyRecord <- liftIO $ maybe (throw $ RepositoryError "Could not retrieve company dependency of invoice") return maybeCompanyRecord
+  to reportEntryRecords customerRecord companyRecord (entityVal invoiceRecordEntity)
 
 getInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Invoice)
 getInvoice invoiceId = do
@@ -145,23 +153,22 @@ getInvoice invoiceId = do
     )
     maybeEntity
 
-getInvoices :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Invoice]
+getInvoices :: (MonadIO m) => Int -> Int -> ReaderT SqlBackend m [Invoice]
 getInvoices start stop = do
   records <- selectList [] [Desc InvoiceRecordYear, Desc InvoiceRecordMonthNumber, OffsetBy start, LimitTo (stop - start)]
   mapM fetchDependencies records
 
-insertInvoice :: MonadIO m =>  UUID -> UUID ->  SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
-insertInvoice  customerId companyId specificMonth entries today paymentDay = do
+insertInvoice :: MonadIO m => UUID -> UUID -> SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
+insertInvoice customerId companyId specificMonth entries today paymentDay = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
   maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
   newFollowUpNumber <- CompanyRepository.nextNumber companyId
-  -- TODO  No from just, fix this
-  let customerRecord = fromJust maybeCustomer
-  let companyRecord = fromJust maybeCompany
+  customerRecord <- maybe (throw (RepositoryError "Customer not found, wrong id")) return maybeCustomer
+  companyRecord <- maybe (throw (RepositoryError "Company not found, wrong id")) return maybeCompany
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
   uuid <- liftIO UUID.nextRandom
   let invoiceRecord = createInvoiceRecord uuid customerRecordId companyRecordId specificMonth newFollowUpNumber today paymentDay
   invoiceRecordId <- insert invoiceRecord
   reportRecords <- insertReports invoiceRecordId entries
-  return $ to reportRecords (entityVal customerRecord) (entityVal companyRecord) invoiceRecord
+  to reportRecords (entityVal customerRecord) (entityVal companyRecord) invoiceRecord

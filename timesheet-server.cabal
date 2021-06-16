@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 98f1248e72ac12f8213a8cd4a942dd5c112fc7b179b1a923da5035b90356fb1e
+-- hash: ce46e3f337b6b86cdda666bfa7b97380e9f81de5c1198ce674e73b40c9e2cb24
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
       Domain.Company
       Domain.Customer
       Domain.Daily
+      Domain.ExternalBusinessId
       Domain.FixedPriceInvoice
       Domain.Invoice
       Domain.Monthly
@@ -66,6 +67,7 @@ library
       InternalAPI.Persistence.FixedPriceInvoiceRepository
       InternalAPI.Persistence.InvoiceRepository
       InternalAPI.Persistence.QuoteRepository
+      InternalAPI.Persistence.RepositoryError
       SmallDPProblemn
   other-modules:
       Paths_timesheet_server

@@ -17,6 +17,8 @@ import qualified InternalAPI.Persistence.Database          as DB
 import           InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
 import           Numeric.Natural
 import Domain.MonthlyId
+import Control.Monad.Except (runExceptT)
+import Data.Either.Combinators (fromRight)
 
 list :: Natural -> Natural -> AppM (Int, [Invoice])
 list from to = do
@@ -25,6 +27,7 @@ list from to = do
     invoices <- InvoiceRepository.getInvoices (fromEnum from) (fromEnum to)
     amount <- InvoiceRepository.countInvoices
     return (amount, invoices)
+  return undefined
 
 get :: UUID -> AppM (Maybe Invoice)
 get invoiceId = do

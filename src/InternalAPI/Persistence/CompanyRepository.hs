@@ -25,6 +25,7 @@ import           Data.UUID                          (UUID)
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Company
+import           Domain.ExternalBusinessId
 import           ExternalAPI.NewTypes.NewCompany
 import           InternalAPI.Persistence.BusinessId
 
@@ -62,7 +63,7 @@ getCompanyByVat vatNumber = do
   companyEntity <- getBy (UniqueCompanyVAT vatNumber)
   return $ to . entityVal <$> companyEntity
 
-getCompany :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Company)
+getCompany :: MonadIO m => ExternalBusinessId CompanyService -> ReaderT SqlBackend m (Maybe Company)
 getCompany businessId = do
   companyEntity <- getBy (UniqueCompanyBusinessId (BusinessId businessId))
   return $ to . entityVal <$> companyEntity
@@ -95,7 +96,7 @@ upWithNumber today (Just cur) =
 
 nextNumber :: MonadIO m => UUID -> ReaderT SqlBackend m Int
 nextNumber companyId = do
-  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId . BusinessId $  companyId)
+  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId . BusinessId $ companyId)
   -- TODO no from just, remove this
   let companyEntity = fromJust maybeCompanyEntity
   time <- liftIO getCurrentTime
