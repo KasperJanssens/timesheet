@@ -13,9 +13,10 @@
 
 module InternalAPI.Persistence.FixedPriceInvoiceRepository where
 
+import qualified Common.Helper                              as Common
+import           Control.Exception.Base                     (throw)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
-import           Data.Maybe                                 (fromJust)
 import           Data.Text                                  (Text)
 import qualified Data.Text                                  as Text
 import           Data.Time.Calendar                         (Day, showGregorian)
@@ -30,7 +31,7 @@ import           InternalAPI.Persistence.CompanyRepository
 import qualified InternalAPI.Persistence.CompanyRepository  as CompanyRepository
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
-import qualified Common.Helper as Common
+import           InternalAPI.Persistence.RepositoryError
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateFixedPriceInvoice"]
@@ -72,7 +73,7 @@ toFixedPriceInvoice' id invoiceId today paymentDay description totalExcl custome
                     company
                     (Text.pack . showGregorian $ today)
                     (Text.pack . showGregorian $ paymentDay)
-                    description 
+                    description
 
 toFixedPriceInvoice :: FixedPriceInvoiceRecord -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
 toFixedPriceInvoice (FixedPriceInvoiceRecord (BusinessId id) totalExcl today  paymentDay description _ _ invoiceId) = toFixedPriceInvoice' id invoiceId today paymentDay description  totalExcl
@@ -86,8 +87,10 @@ getFixedPriceInvoice uuid = do
         let fixedPriceInvoiceRecord = entityVal fixedPriceInvoiceRecordEntity
         maybeCustomer <- selectFirst [CustomerRecordId ==. fixedPriceInvoiceRecordCustomerLink fixedPriceInvoiceRecord] []
         maybeCompany <- selectFirst [CompanyRecordId ==. fixedPriceInvoiceRecordCompanyLink fixedPriceInvoiceRecord] []
-        let customerRecord = entityVal . fromJust $ maybeCustomer
-        let companyRecord = entityVal . fromJust $ maybeCompany
+        customerEntity <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+        companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
+        let customerRecord = entityVal customerEntity
+        let companyRecord = entityVal companyEntity
         return $ Just $ toFixedPriceInvoice fixedPriceInvoiceRecord customerRecord companyRecord
     )
     maybeEntity
@@ -96,8 +99,10 @@ retrieveCustomer :: MonadIO m => FixedPriceInvoiceRecord -> ReaderT SqlBackend m
 retrieveCustomer fixedPriceInvoiceRecord@(FixedPriceInvoiceRecord _ _ _ _ _ customerRecordId companyRecordId _) = do
   maybeCustomer <- selectFirst [CustomerRecordId ==. customerRecordId] []
   maybeCompany <- selectFirst [CompanyRecordId ==. companyRecordId] []
-  let customerRecord = entityVal . fromJust $ maybeCustomer
-  let companyRecord = entityVal . fromJust $ maybeCompany
+  customerEntity <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+  companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
+  let customerRecord = entityVal customerEntity
+  let companyRecord = entityVal companyEntity
   return $ toFixedPriceInvoice fixedPriceInvoiceRecord customerRecord companyRecord
 
 getFixedPriceInvoices :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [FixedPriceInvoice]
@@ -111,11 +116,10 @@ insertFixedPriceInvoice customerId companyId today paymentDay description total 
   maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
   newFollowUpNumber <- CompanyRepository.nextNumber companyId
   uuid <- liftIO UUID.nextRandom
-  -- TODO  No from just, fix this
-  let customerRecord = fromJust maybeCustomer
-  let companyRecord = fromJust maybeCompany
+  customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+  companyRecord <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
-  let fixedPriceRecord = createFixedPriceInvoiceRecord uuid customerRecordId companyRecordId newFollowUpNumber today paymentDay description total 
+  let fixedPriceRecord = createFixedPriceInvoiceRecord uuid customerRecordId companyRecordId newFollowUpNumber today paymentDay description total
   _ <- insert fixedPriceRecord
   return $ toFixedPriceInvoice' uuid newFollowUpNumber today paymentDay description total (entityVal customerRecord) (entityVal companyRecord)

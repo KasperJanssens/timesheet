@@ -27,6 +27,7 @@ data Daily = Daily
     day         :: Day,
     workpacks   :: [WorkPack],
     customerId  :: UUID,
-    companyVat :: Text
+    companyVat :: Text,
+    alreadyInvoiced :: Bool
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)

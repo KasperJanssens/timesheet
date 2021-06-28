@@ -36,7 +36,7 @@ spec = around withDatabase $
         return (Customer.id customer, Company.vatNumber company)
       let (customerId, companyVatNumber) = fromRight undefined resOrErr
       uuid <- UUID.nextRandom
-      let daily = Daily uuid day [] customerId companyVatNumber
+      let daily = Daily uuid day [] customerId companyVatNumber False
       recordId <- runWithoutPool connString $ DailyRecord.insertDaily daily
       maybeRes <- runWithoutPool connString $ DailyRecord.findByDay uuid
 

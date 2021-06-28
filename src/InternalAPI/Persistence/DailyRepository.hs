@@ -20,8 +20,7 @@ import           Control.Monad                              (foldM, forM, forM_)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
 import qualified Data.List                                  as List
-import           Data.Maybe                                 (catMaybes,
-                                                             fromJust)
+import           Data.Maybe                                 (catMaybes)
 import           Data.Text                                  (Text)
 import           Data.Time                                  (getCurrentTime)
 import           Data.Time.Calendar
@@ -34,10 +33,12 @@ import qualified Domain.Company                             as Company
 import           Domain.Customer                            (Customer)
 import qualified Domain.Customer                            as Customer
 import           Domain.Daily
+import qualified Domain.Daily                               as Daily
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
 import           InternalAPI.Persistence.CompanyRepository  hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import           InternalAPI.Persistence.InvoiceRepository  (InvoiceRecordId, Unique (UniqueInvoiceBusinessId))
+import           InternalAPI.Persistence.RepositoryError
 import           Safe                                       (headMay)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
 
@@ -59,6 +60,7 @@ DailyRecord
     creationDate UTCTime
     monthNumber Int
     year Int
+    alreadyInvoiced Bool
     customerLink CustomerRecordId
     companyLink CompanyRecordId
     UniqueDay day companyLink customerLink
@@ -66,26 +68,30 @@ DailyRecord
     deriving Show
 |]
 
+conditionallyDelete :: (MonadIO m) => Daily -> ReaderT SqlBackend m ()
+conditionallyDelete (Daily dailyId _ _ _ _ False) = deleteDaily dailyId
+conditionallyDelete (Daily _ _ _ _ _ True)        = return ()
+
 toWorkPack :: WorkPackRecord -> WorkPack
 toWorkPack (WorkPackRecord (BusinessId bId) a t d _ _) = WorkPack bId a (read t) d
 
 fromWorkPack :: Key DailyRecord -> WorkPack -> WorkPackRecord
 fromWorkPack dailyRecordId (WorkPack bId a t d) = WorkPackRecord (BusinessId bId) a (show t) d dailyRecordId Nothing
 
-toDaily :: UUID -> UUID -> Text -> [WorkPack] -> Day -> Daily
-toDaily dailyId customerId companyVat workPacks d = Daily dailyId d workPacks customerId companyVat
+toDaily :: UUID -> UUID -> Text -> [WorkPack] -> Day -> Bool -> Daily
+toDaily dailyId customerId companyVat workPacks d alreadyInvoiced = Daily dailyId d workPacks customerId companyVat alreadyInvoiced
 
 to :: CustomerRecord -> CompanyRecord -> [WorkPackRecord] -> DailyRecord -> Daily
 to customerRecord companyRecord workPackRecords dailyRecord =
   let workPacks = toWorkPack <$> workPackRecords
-   in toDaily (uuid $ dailyRecordBusinessId dailyRecord) (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord)
+   in toDaily (uuid $ dailyRecordBusinessId dailyRecord) (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord) (dailyRecordAlreadyInvoiced dailyRecord)
 
 workPacksForMonth :: (MonadIO m) => UUID -> UUID -> Int -> Int -> ReaderT SqlBackend m [Daily]
 workPacksForMonth customerId companyId year month = do
   maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
   maybeCompany <- getBy (UniqueCompanyBusinessId (BusinessId companyId))
-  let customerRecord = fromJust maybeCustomer
-  let companyRecord = fromJust maybeCompany
+  customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+  companyRecord <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
   records <-
     selectList
       [ DailyRecordMonthNumber ==. month,
@@ -125,22 +131,21 @@ findByDay dailyId = do
     ( \dailyEntity -> do
         maybeCustomer <- get (dailyRecordCustomerLink $ entityVal dailyEntity)
         maybeCompany <- get (dailyRecordCompanyLink $ entityVal dailyEntity)
-        let customerRecord = fromJust maybeCustomer
-        let companyRecord = fromJust maybeCompany
+        customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+        companyRecord <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
         daily <- addWorkPacks dailyEntity companyRecord customerRecord
         return $ Just daily
     )
     maybeDaily
 
 insertDaily :: (MonadIO m) => Daily -> ReaderT SqlBackend m DailyRecordId
-insertDaily (Daily uuid day workPacks customerId companyVat) = do
+insertDaily (Daily uuid day workPacks customerId companyVat alreadyInvoiced) = do
   now <- liftIO getCurrentTime
   let (year, month, _) = toGregorian day
   maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
   maybeCompany <- getBy (UniqueCompanyVAT companyVat)
-  let maybeDailyRecord = liftA2 (DailyRecord (BusinessId uuid) day now month (fromIntegral year)) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
-  --  TODO this needs to be better
-  let dailyRecord = fromJust maybeDailyRecord
+  let maybeDailyRecord = liftA2 (DailyRecord (BusinessId uuid) day now month (fromIntegral year) alreadyInvoiced) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
+  dailyRecord <-  liftIO $ maybe (throw $ RepositoryError "Daily record noet found") return  maybeDailyRecord
   dailyRecordId <- insert dailyRecord
   let workPackRecords = fromWorkPack dailyRecordId <$> workPacks
   insertMany_ workPackRecords
@@ -158,7 +163,15 @@ fetchCompanyAndCustomer :: (MonadIO m) => CustomerRecordId -> CompanyRecordId ->
 fetchCompanyAndCustomer customerRecordId companyRecordId = do
   maybeCustomerRecord <- get customerRecordId
   maybeCompanyRecord <- get companyRecordId
-  return (fromJust maybeCustomerRecord, fromJust maybeCompanyRecord)
+  customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomerRecord
+  companyRecord <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyRecord
+  return (customerRecord, companyRecord)
+
+fetchCompany :: (MonadIO m) => Entity DailyRecord -> ReaderT SqlBackend m CompanyRecord
+fetchCompany dailyRecordEntity = do
+  let companyLink = dailyRecordCompanyLink (entityVal dailyRecordEntity)
+  maybeCompany <- get companyLink
+  liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
 
 selectMonthsWithUninvoicedWorkPacks :: (MonadIO m) => ReaderT SqlBackend m [Entity DailyRecord]
 selectMonthsWithUninvoicedWorkPacks = do
@@ -200,21 +213,14 @@ allDailies = []
 countDailies :: MonadIO m => ReaderT SqlBackend m Int
 countDailies = count allDailies
 
-fetchCompany :: (MonadIO m) => Entity DailyRecord -> ReaderT SqlBackend m CompanyRecord
-fetchCompany dailyRecordEntity =
-  let companyLink = dailyRecordCompanyLink (entityVal dailyRecordEntity)
-   in do
-        maybeCompany <- get companyLink
-        --      TODO Get rid of from just
-        return $ fromJust maybeCompany
+
 
 fetchCustomer :: (MonadIO m) => Entity DailyRecord -> ReaderT SqlBackend m CustomerRecord
 fetchCustomer dailyRecordEntity =
   let customerLink = dailyRecordCustomerLink (entityVal dailyRecordEntity)
    in do
-        maybeCompany <- get customerLink
-        --      TODO Get rid of from just
-        return $ fromJust maybeCompany
+        maybeCustomer <- get customerLink
+        liftIO $ maybe (throw $ RepositoryError "Customer not found ") return maybeCustomer
 
 uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
 uncurry3 f ~(a, b, c) = f a b c
@@ -231,10 +237,23 @@ deleteDaily :: (MonadIO m) => UUID -> ReaderT SqlBackend m ()
 deleteDaily uuid = do
   deleteBy (UniqueDailyBusinessId (BusinessId uuid))
 
+markAsInvoiced ::(MonadIO m) => UUID -> ReaderT SqlBackend m ()
+markAsInvoiced businessId = do
+   maybeDaily <- getBy (UniqueDailyBusinessId (BusinessId businessId))
+   dailyRecord <- liftIO $ maybe (throw $ RepositoryError "Daily not found") return maybeDaily
+   let dailyRecordId = entityKey dailyRecord
+   update dailyRecordId [DailyRecordAlreadyInvoiced =. True]
+
+markAllAsInvoiced :: (MonadIO m) => [Daily] -> ReaderT SqlBackend m ()
+markAllAsInvoiced dailies = do
+  let dailyIds = Daily.id <$> dailies
+  forM_ dailyIds markAsInvoiced
+
 linkInvoiceToWorkpacks :: (MonadIO m) => [WorkPack] -> UUID -> ReaderT SqlBackend m ()
 linkInvoiceToWorkpacks wps invoiceBusinessId = do
   maybeInvoice <- getBy (UniqueInvoiceBusinessId (BusinessId invoiceBusinessId))
-  let invoiceRecordId = entityKey $ fromJust maybeInvoice
+  invoiceRecord <- liftIO $ maybe (throw $ RepositoryError "Invoice not found") return maybeInvoice
+  let invoiceRecordId = entityKey invoiceRecord
   let workPackBIds = wpid <$> wps
   maybeWorkPackRecordEntities <- mapM (getBy . UniqueWorkPackBusinessId . BusinessId) workPackBIds
   let workPackRecordIds = entityKey <$> catMaybes maybeWorkPackRecordEntities

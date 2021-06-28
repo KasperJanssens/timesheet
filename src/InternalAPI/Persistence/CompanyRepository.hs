@@ -13,21 +13,24 @@
 
 module InternalAPI.Persistence.CompanyRepository where
 
-import           Control.Monad                      (void)
-import           Control.Monad.Reader               (MonadIO, ReaderT, liftIO)
-import           Data.Bits                          (shiftR)
-import           Data.Maybe                         (fromJust)
-import           Data.Text                          (Text)
-import           Data.Time.Calendar.OrdinalDate     (toOrdinalDate)
-import           Data.Time.Clock                    (UTCTime, getCurrentTime,
-                                                     utctDay)
-import           Data.UUID                          (UUID)
+import           Control.Exception.Base                  (throw)
+import           Control.Monad                           (void)
+import           Control.Monad.Reader                    (MonadIO, ReaderT,
+                                                          liftIO)
+import           Data.Bits                               (shiftR)
+import           Data.Text                               (Text)
+import           Data.Time.Calendar.OrdinalDate          (toOrdinalDate)
+import           Data.Time.Clock                         (UTCTime,
+                                                          getCurrentTime,
+                                                          utctDay)
+import           Data.UUID                               (UUID)
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Company
 import           Domain.ExternalBusinessId
 import           ExternalAPI.NewTypes.NewCompany
 import           InternalAPI.Persistence.BusinessId
+import           InternalAPI.Persistence.RepositoryError
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateCompany"]
@@ -97,8 +100,7 @@ upWithNumber today (Just cur) =
 nextNumber :: MonadIO m => UUID -> ReaderT SqlBackend m Int
 nextNumber companyId = do
   maybeCompanyEntity <- getBy (UniqueCompanyBusinessId . BusinessId $ companyId)
-  -- TODO no from just, remove this
-  let companyEntity = fromJust maybeCompanyEntity
+  companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyEntity
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastInvoiceFollowUpNumber $ entityVal companyEntity
   update (entityKey companyEntity) [CompanyRecordCurrentLastInvoiceFollowUpNumber =. Just nextNumber]
@@ -107,8 +109,7 @@ nextNumber companyId = do
 nextQuoteNumber :: MonadIO m => Text -> ReaderT SqlBackend m Int
 nextQuoteNumber vatNumber = do
   maybeCompanyEntity <- getBy (UniqueCompanyVAT vatNumber)
-  -- TODO no from just, remove this
-  let companyEntity = fromJust maybeCompanyEntity
+  companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyEntity
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastQuoteFollowUpNumber $ entityVal companyEntity
   update (entityKey companyEntity) [CompanyRecordCurrentLastQuoteFollowUpNumber =. Just nextNumber]

@@ -27,7 +27,7 @@ list from to = do
     invoices <- InvoiceRepository.getInvoices (fromEnum from) (fromEnum to)
     amount <- InvoiceRepository.countInvoices
     return (amount, invoices)
-  return undefined
+--  return undefined
 
 get :: UUID -> AppM (Maybe Invoice)
 get invoiceId = do
@@ -47,4 +47,5 @@ insert (MonthlyId y m customerId companyId) = do
   DB.executeInPool pool $ do
     invoice <- InvoiceRepository.insertInvoice customerId companyId specificMonth entries today paymentDay
     DailyRepository.linkInvoiceToWorkpacks ws (Domain.Invoice.id invoice)
+    DailyRepository.markAllAsInvoiced dailies
     return invoice

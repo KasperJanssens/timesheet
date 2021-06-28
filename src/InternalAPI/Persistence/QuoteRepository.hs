@@ -13,10 +13,10 @@
 
 module InternalAPI.Persistence.QuoteRepository where
 
+import           Control.Exception.Base                              (throw)
 import           Control.Monad.IO.Class                              (MonadIO,
                                                                       liftIO)
 import           Control.Monad.Reader                                (ReaderT)
-import           Data.Maybe                                          (fromJust)
 import           Data.Text                                           (Text)
 import qualified Data.Text                                           as Text
 import           Data.Text.Internal.Builder                          (toLazyText)
@@ -36,6 +36,7 @@ import           InternalAPI.Persistence.CustomerRepository          hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository          as CustomerRepository
 import           InternalAPI.Persistence.FixedPriceInvoiceRepository (FixedPriceInvoiceRecordId,
                                                                       Unique (UniqueFixedPriceBusinessId))
+import           InternalAPI.Persistence.RepositoryError
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateQuote"]
@@ -92,8 +93,10 @@ getQuote uuid = do
         let quoteRecord = entityVal quoteRecordEntity
         maybeCustomer <- selectFirst [CustomerRecordId ==. quoteRecordCustomerLink quoteRecord] []
         maybeCompany <- selectFirst [CompanyRecordId ==. quoteRecordCompanyLink quoteRecord] []
-        let customerRecord = entityVal . fromJust $ maybeCustomer
-        let companyRecord = entityVal . fromJust $ maybeCompany
+        customer <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+        company <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCompany
+        let customerRecord = entityVal customer
+        let companyRecord = entityVal company
         return $ Just $ toQuote quoteRecord customerRecord companyRecord
     )
     maybeEntity
@@ -102,8 +105,10 @@ retrieveCustomer :: MonadIO m => QuoteRecord -> ReaderT SqlBackend m Quote
 retrieveCustomer quoteRecord@(QuoteRecord _ _ customerRecordId companyRecordId _ _ _ _ _) = do
   maybeCustomer <- selectFirst [CustomerRecordId ==. customerRecordId] []
   maybeCompany <- selectFirst [CompanyRecordId ==. companyRecordId] []
-  let customerRecord = entityVal . fromJust $ maybeCustomer
-  let companyRecord = entityVal . fromJust $ maybeCompany
+  customer <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+  company <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCompany
+  let customerRecord = entityVal customer
+  let companyRecord = entityVal company
   return $ toQuote quoteRecord customerRecord companyRecord
 
 getQuotes :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Quote]
@@ -123,20 +128,23 @@ insertQuote customerId companyVat total today termsOfDelivery description  = do
   maybeCompany <- getBy . UniqueCompanyVAT $ companyVat
   newFollowUpNumber <- CompanyRepository.nextQuoteNumber companyVat
   uuid <- liftIO UUID.nextRandom
-  -- TODO  No from just, fix this
-  let customerRecord = fromJust maybeCustomer
-  let companyRecord = fromJust maybeCompany
+  customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
+  companyRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCompany
+  let customer = entityVal customerRecord
+  let company = entityVal companyRecord
   let customerRecordId = entityKey customerRecord
   let companyRecordId = entityKey companyRecord
-  
+
   let quoteRecord = createQuoteRecord uuid customerRecordId companyRecordId newFollowUpNumber total today termsOfDelivery description
   _ <- insert quoteRecord
-  return $ toQuote' uuid newFollowUpNumber total today termsOfDelivery description (entityVal customerRecord) (entityVal companyRecord)
+  return $ toQuote' uuid newFollowUpNumber total today termsOfDelivery description customer company
 
 linkInvoice :: MonadIO m => UUID -> UUID -> ReaderT SqlBackend m ()
 linkInvoice invoiceId quoteId = do
   maybeInvoice <- getBy (UniqueFixedPriceBusinessId (BusinessId invoiceId))
   maybeQuote <- getBy (UniqueQuoteBusinessId (BusinessId quoteId))
-  let quoteId = entityKey $ fromJust maybeQuote
-  let invoiceId = entityKey $ fromJust maybeInvoice
+  invoice <- liftIO $ maybe (throw $ RepositoryError "Invoice not found") return maybeInvoice
+  quote <- liftIO $ maybe (throw $ RepositoryError "Quote not found") return maybeQuote
+  let quoteId = entityKey quote
+  let invoiceId = entityKey invoice
   update quoteId [QuoteRecordInvoiceLink =. Just invoiceId]

@@ -25,7 +25,7 @@ import Domain.Customer (Customer)
 import Domain.Company (Company)
 
 updateMonthlyMap :: Daily -> MonthlyMap -> ((), MonthlyMap)
-updateMonthlyMap daily@(Daily _ day _ _ _) map =
+updateMonthlyMap daily@(Daily _ day _ _ _ _) map =
   let (year, monthOfYear, _) = toJulian day
    in let updatedMap = Map.insertWith merge (SpecificMonth (fromIntegral year) monthOfYear) (Monthly.create (fromIntegral year) monthOfYear daily) map
        in ((), updatedMap)

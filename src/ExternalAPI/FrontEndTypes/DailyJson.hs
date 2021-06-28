@@ -16,16 +16,17 @@ import           GHC.Generics         (Generic)
 import           Servant.API          (FromHttpApiData (..))
 
 toDaily :: DailyJson -> Daily
-toDaily (DailyJson i d w cId cVat) = Daily i d w cId cVat
+toDaily (DailyJson i d w cId cVat alreadyInvoice) = Daily i d w cId cVat alreadyInvoice
 
 fromDaily :: Daily -> DailyJson
-fromDaily (Daily i d w cId cVat) = DailyJson i d w cId cVat
+fromDaily (Daily i d w cId cVat alreadyInvoice) = DailyJson i d w cId cVat alreadyInvoice
 
 data DailyJson = DailyJson
   { id         :: UUID,
     day        :: Day,
     workpacks  :: [WorkPack],
     customerId :: UUID,
-    companyVat :: Text
+    companyVat :: Text,
+    alreadyInvoice :: Bool
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)

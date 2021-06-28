@@ -35,14 +35,20 @@ get dailyId = do
     do
       DailyRepository.findByDay dailyId
 
+
 delete :: UUID -> AppM (Maybe Daily)
 delete dailyId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
       maybeDay <- DailyRepository.findByDay dailyId
-      DailyRepository.deleteDaily dailyId
-      return maybeDay
+      case maybeDay of
+        Nothing -> return maybeDay
+        Just daily -> do
+           DailyRepository.conditionallyDelete daily
+           return maybeDay
+--      DailyRepository.deleteDaily dailyId
+--      return maybeDay
 
 getAllForMonth :: UUID -> UUID -> SpecificMonth -> AppM [Daily]
 getAllForMonth companyId customerId (SpecificMonth y m) = do
@@ -63,7 +69,7 @@ insert (NewDaily d newWps cId cVat) = do
           return $ WorkPack uuid a w d
       )
       newWps
-  let daily = Daily uuid d wps cId cVat
+  let daily = Daily uuid d wps cId cVat False
   void $
     DB.executeInPool pool $
       do
