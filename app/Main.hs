@@ -28,4 +28,4 @@ runApp = do
   let dbConn = Database.conn "localhost" "timesheetdb" user password 9875
   Database.migrate dbConn
 
-  start 9876 9875
+  startServer 9876 9875

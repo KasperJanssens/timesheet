@@ -2,11 +2,9 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 
 module ExternalAPI.Server where
 
@@ -16,35 +14,23 @@ import qualified Application.DailyService                  as DailyService
 import           Application.Environment
 import qualified Application.FixedPriceInvoiceService      as FixedPriceInvoiceService
 import qualified Application.InvoiceService                as InvoiceService
-import qualified Application.MapUtil                       as MapUtil
 import qualified Application.MonthlyService                as MonthlyService
 import qualified Application.QuoteService                  as QuoteService
 import           Application.ServiceClass
-import           Control.Applicative
-import           Control.Concurrent.STM                    (atomically,
-                                                            newTVarIO,
-                                                            readTVarIO,
-                                                            stateTVar)
 import           Control.Monad.IO.Class                    (liftIO)
 import           Control.Monad.Logger                      (runStderrLoggingT)
 import           Control.Monad.Reader                      (asks, runReaderT)
 import qualified Data.Map                                  as Map
-import           Data.Maybe                                (fromMaybe, isJust)
 import qualified Data.Text                                 as Text
-import           Data.Time                                 (Day)
 import           Data.UUID                                 (UUID)
 import qualified Data.UUID.V4                              as UUID
 import           Database.Persist.Postgresql               (ConnectionString,
                                                             createPostgresqlPool)
-import           Debug.Trace
 import           Domain.Company                            (Company)
 import           Domain.Customer                           (Customer)
 import           Domain.Daily                              (allWorkTypes)
 import           Domain.FixedPriceInvoice                  (FixedPriceInvoice)
 import           Domain.Invoice                            (Invoice)
-import           Domain.Monthly
-import           Domain.MonthlyId
-import           Domain.MonthlyReport
 import           Domain.Quote                              (Quote)
 import           ExternalAPI.ApiType
 import           ExternalAPI.FrontEndTypes.DailyJson
@@ -66,6 +52,8 @@ import           Network.Wai.Middleware.Cors
 import           Numeric.Natural                           (Natural)
 import           Servant
 import Domain.ExternalBusinessId (ExternalBusinessId, CompanyService)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (stateTVar, newTVarIO)
 
 runWithState :: State -> AppM a -> Handler a
 runWithState s x = do
@@ -120,12 +108,7 @@ getDaily dailyId = do
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
 insertDailyWithGuard :: NewDaily -> AppM DailyJson
-insertDailyWithGuard newDaily@(NewDaily d _ cId cVat) = do
-  --  TODO Do this better
-  --  maybeDaily <- DailyService.get cId cVat d
-  --  if isJust maybeDaily
-  --    then throwError $ err409 {errBody = "Day already filled out, edit existing instead of writing new"}
-  --    else do
+insertDailyWithGuard newDaily = do
   daily <- DailyService.insert newDaily
   return $ fromDaily daily
 
@@ -264,8 +247,8 @@ admin initialState req respond = do
 defaultDatabaseConnectionString :: Int -> ConnectionString
 defaultDatabaseConnectionString = Database.conn "localhost" "timesheetdb" "postgres" "mysecretpassword"
 
-start :: Int -> Int -> IO ()
-start port dbPort = withStdoutLogger $ \aplogger -> do
+startServer :: Int -> Int -> IO ()
+startServer port dbPort = withStdoutLogger $ \aplogger -> do
   initialMonthlyMap <- newTVarIO Map.empty
   let connectionString = defaultDatabaseConnectionString dbPort
   --  TODO check how to shut down gracefully when the server shuts down. Some kind of shutdown hook will likely exist. Maybe a withPool around this whole snippet is the best?

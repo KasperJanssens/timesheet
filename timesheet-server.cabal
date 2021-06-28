@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ce46e3f337b6b86cdda666bfa7b97380e9f81de5c1198ce674e73b40c9e2cb24
+-- hash: 02e3d492aa2d55162d90ec3d15d5cca064a9698c21865dcae0156c082dfa3712
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -110,7 +110,7 @@ library
     , warp ==3.3.14
   default-language: Haskell2010
 
-executable timesheet-server-exe
+executable timesheet
   main-is: Main.hs
   other-modules:
       Paths_timesheet_server
@@ -155,7 +155,7 @@ executable timesheet-server-exe
     , warp ==3.3.14
   default-language: Haskell2010
 
-test-suite timesheet-server-test
+test-suite unit-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:

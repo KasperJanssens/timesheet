@@ -16,7 +16,7 @@ module InternalAPI.Persistence.DailyRepository where
 
 import           Control.Applicative
 import           Control.Exception.Base                     (throw)
-import           Control.Monad                              (foldM, forM, forM_)
+import           Control.Monad                              (foldM, forM_)
 import           Control.Monad.IO.Class                     (MonadIO, liftIO)
 import           Control.Monad.Reader                       (ReaderT)
 import qualified Data.List                                  as List
@@ -28,10 +28,6 @@ import           Data.Time.Clock                            (UTCTime)
 import           Data.UUID                                  (UUID)
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
-import           Domain.Company                             (Company)
-import qualified Domain.Company                             as Company
-import           Domain.Customer                            (Customer)
-import qualified Domain.Customer                            as Customer
 import           Domain.Daily
 import qualified Domain.Daily                               as Daily
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
@@ -40,7 +36,6 @@ import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import           InternalAPI.Persistence.InvoiceRepository  (InvoiceRecordId, Unique (UniqueInvoiceBusinessId))
 import           InternalAPI.Persistence.RepositoryError
 import           Safe                                       (headMay)
-import           Servant.Server.Internal.ServerError        (err404, errBody)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateDaily"]

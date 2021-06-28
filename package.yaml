@@ -60,7 +60,7 @@ library:
   source-dirs: src
 
 executables:
-  timesheet-server-exe:
+  timesheet:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -71,7 +71,7 @@ executables:
     - timesheet-server
 
 tests:
-  timesheet-server-test:
+  unit-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:

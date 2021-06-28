@@ -17,7 +17,6 @@ import           Control.Exception.Base                  (throw)
 import           Control.Monad                           (void)
 import           Control.Monad.Reader                    (MonadIO, ReaderT,
                                                           liftIO)
-import           Data.Bits                               (shiftR)
 import           Data.Text                               (Text)
 import           Data.Time.Calendar.OrdinalDate          (toOrdinalDate)
 import           Data.Time.Clock                         (UTCTime,
