@@ -87,6 +87,8 @@ type WebApi =
     :<|> "v1" :> "company" :> CompanyApi
     :<|> "v1" :> "quote" :> QuoteApi
     :<|> "v1" :> "fixedPriceInvoice" :> FixedPriceInvoiceApi
+    :<|> Get '[JSON] NoContent
+    :<|> Raw
 
 api :: Proxy WebApi
 api = Proxy

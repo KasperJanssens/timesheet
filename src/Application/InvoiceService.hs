@@ -23,7 +23,7 @@ import Data.Either.Combinators (fromRight)
 list :: Natural -> Natural -> AppM (Int, [Invoice])
 list from to = do
   pool <- asks poel
-  DB.executeInPool pool $ do
+  (am, inv) <- DB.executeInPool pool $ do
     invoices <- InvoiceRepository.getInvoices (fromEnum from) (fromEnum to)
     amount <- InvoiceRepository.countInvoices
     return (amount, invoices)

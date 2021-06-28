@@ -1,57 +1,63 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ExternalAPI.Server where
 
-import qualified Application.CompanyService                as CompanyService
-import qualified Application.CustomerService               as CustomerService
-import qualified Application.DailyService                  as DailyService
-import           Application.Environment
-import qualified Application.FixedPriceInvoiceService      as FixedPriceInvoiceService
-import qualified Application.InvoiceService                as InvoiceService
-import qualified Application.MonthlyService                as MonthlyService
-import qualified Application.QuoteService                  as QuoteService
-import           Application.ServiceClass
-import           Control.Monad.IO.Class                    (liftIO)
-import           Control.Monad.Logger                      (runStderrLoggingT)
-import           Control.Monad.Reader                      (asks, runReaderT)
-import qualified Data.Map                                  as Map
-import qualified Data.Text                                 as Text
-import           Data.UUID                                 (UUID)
-import qualified Data.UUID.V4                              as UUID
-import           Database.Persist.Postgresql               (ConnectionString,
-                                                            createPostgresqlPool)
-import           Domain.Company                            (Company)
-import           Domain.Customer                           (Customer)
-import           Domain.Daily                              (allWorkTypes)
-import           Domain.FixedPriceInvoice                  (FixedPriceInvoice)
-import           Domain.Invoice                            (Invoice)
-import           Domain.Quote                              (Quote)
-import           ExternalAPI.ApiType
-import           ExternalAPI.FrontEndTypes.DailyJson
-import           ExternalAPI.FrontEndTypes.MonthlyListJson (MonthlyListJson,
-                                                            from)
-import           ExternalAPI.NewTypes.NewCompany
-import           ExternalAPI.NewTypes.NewCustomer
-import           ExternalAPI.NewTypes.NewDaily
-import           ExternalAPI.NewTypes.NewFixedPriceInvoice (NewFixedPriceInvoice (..))
-import           ExternalAPI.NewTypes.NewInvoice           (NewInvoice (..))
-import           ExternalAPI.NewTypes.NewQuote             (NewQuote (..))
-import           ExternalAPI.WorkTypeJson
-import qualified InternalAPI.Persistence.Database          as Database
-import qualified Network.HTTP.Types                        as HttpTypes
-import           Network.Wai                               (Middleware)
-import           Network.Wai.Handler.Warp
-import           Network.Wai.Logger                        (withStdoutLogger)
-import           Network.Wai.Middleware.Cors
-import           Numeric.Natural                           (Natural)
-import           Servant
-import Domain.ExternalBusinessId (ExternalBusinessId, CompanyService)
+import qualified Application.CompanyService as CompanyService
+import qualified Application.CustomerService as CustomerService
+import qualified Application.DailyService as DailyService
+import Application.Environment
+import qualified Application.FixedPriceInvoiceService as FixedPriceInvoiceService
+import qualified Application.InvoiceService as InvoiceService
+import qualified Application.MonthlyService as MonthlyService
+import qualified Application.QuoteService as QuoteService
+import Application.ServiceClass
+  ( atomically,
+  )
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (runStderrLoggingT)
+import Control.Monad.Reader (asks, runReaderT, ReaderT)
+import qualified Data.Map as Map
+import qualified Data.Text as Text
+import Data.UUID (UUID)
+import qualified Data.UUID.V4 as UUID
+import Database.Persist.Postgresql
+  ( ConnectionString,
+    createPostgresqlPool,
+  )
+import Domain.Company (Company)
+import Domain.Customer (Customer)
+import Domain.Daily (allWorkTypes)
+import Domain.ExternalBusinessId (CompanyService, ExternalBusinessId)
+import Domain.FixedPriceInvoice (FixedPriceInvoice)
+import Domain.Invoice (Invoice)
+import Domain.Quote (Quote)
+import ExternalAPI.ApiType
+import ExternalAPI.FrontEndTypes.DailyJson
+import ExternalAPI.FrontEndTypes.MonthlyListJson
+  ( MonthlyListJson,
+    from,
+  )
+import ExternalAPI.NewTypes.NewCompany
+import ExternalAPI.NewTypes.NewCustomer
+import ExternalAPI.NewTypes.NewDaily
+import ExternalAPI.NewTypes.NewFixedPriceInvoice (NewFixedPriceInvoice (..))
+import ExternalAPI.NewTypes.NewInvoice (NewInvoice (..))
+import ExternalAPI.NewTypes.NewQuote (NewQuote (..))
+import ExternalAPI.WorkTypeJson
+import qualified InternalAPI.Persistence.Database as Database
+import qualified Network.HTTP.Types as HttpTypes
+import Network.Wai (Middleware)
+import Network.Wai.Handler.Warp
+import Network.Wai.Logger (withStdoutLogger)
+import Network.Wai.Middleware.Cors
+import Numeric.Natural (Natural)
+import Servant
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (stateTVar, newTVarIO)
 
@@ -186,7 +192,7 @@ listQuotes (Just Uninvoiced) _ _ = do
   return $ addHeader (length quotes) quotes
 
 createInvoice :: NewInvoice -> AppM Invoice
-createInvoice (NewInvoice monthlyId)= InvoiceService.insert monthlyId
+createInvoice (NewInvoice monthlyId) = InvoiceService.insert monthlyId
 
 createFixedPriceInvoice :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
 createFixedPriceInvoice = FixedPriceInvoiceService.insert
@@ -221,9 +227,24 @@ serveQuoteApi = listQuotes :<|> createQuote :<|> getQuote
 serveFixedPriceInvoiceApi :: ServerT FixedPriceInvoiceApi AppM
 serveFixedPriceInvoiceApi = listFixedPriceInvoices :<|> createFixedPriceInvoice :<|> getFixedPriceInvoice
 
+serveWebApp :: String -> ServerT Raw AppM
+serveWebApp = serveDirectoryWebApp
+
+redirect :: ReaderT State Handler a
+redirect = throwError err301 {errHeaders = [("Location", "index.html")]}
+
 server :: String -> ServerT WebApi AppM
 server webAppLocation =
-  serveDaily :<|> serveWorkTypes :<|> serveMonthlyApi :<|> serveCustomerApi :<|> serveInvoiceApi :<|> serveCompanyApi :<|> serveQuoteApi :<|> serveFixedPriceInvoiceApi
+  serveDaily
+    :<|> serveWorkTypes
+    :<|> serveMonthlyApi
+    :<|> serveCustomerApi
+    :<|> serveInvoiceApi
+    :<|> serveCompanyApi
+    :<|> serveQuoteApi
+    :<|> serveFixedPriceInvoiceApi
+    :<|> redirect
+    :<|> serveWebApp webAppLocation
 
 corsConfig :: Middleware
 corsConfig = cors (const $ Just policy)
