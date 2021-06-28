@@ -28,6 +28,8 @@ import           Data.UUID                                  (UUID)
 import qualified Data.UUID.V4                               as UUID
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
+import           Domain.Company                             (Company)
+import           Domain.Customer                            (Customer)
 import           Domain.Invoice                             (Invoice (..))
 import           Domain.Monthly
 import           Domain.MonthlyReport
@@ -46,7 +48,7 @@ ReportEntryRecord
     hours Double
     invoiceLink InvoiceRecordId
 InvoiceRecord
-    businessId BusinessId
+    businessId (BusinessId Invoice)
     monthNumber Int
     year Int
     dayOfInvoice Day
@@ -101,7 +103,7 @@ createMonthlyReport (InvoiceRecord _ m y dayOfIn dayOfPay _ _ i) reportEntryReco
                             (Text.pack . showGregorian $ dayOfPay)
 
 to :: (MonadIO m) => [ReportEntryRecord] -> CustomerRecord -> CompanyRecord -> InvoiceRecord -> m Invoice
-to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord (BusinessId businessId) m y dayOfIn dayOfPay _ _ i) =
+to reportEntries customerRecord companyRecord invoiceRecord@(InvoiceRecord businessId m y dayOfIn dayOfPay _ _ i) =
   let customer = CustomerRepository.to customerRecord
    in let company = CompanyRepository.to companyRecord in
      do
@@ -140,9 +142,9 @@ fetchDependencies invoiceRecordEntity = do
   companyRecord <- liftIO $ maybe (throw $ RepositoryError "Could not retrieve company dependency of invoice") return maybeCompanyRecord
   to reportEntryRecords customerRecord companyRecord (entityVal invoiceRecordEntity)
 
-getInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Invoice)
+getInvoice :: MonadIO m => BusinessId Invoice -> ReaderT SqlBackend m (Maybe Invoice)
 getInvoice invoiceId = do
-  maybeEntity <- getBy (UniqueInvoiceBusinessId (BusinessId invoiceId))
+  maybeEntity <- getBy (UniqueInvoiceBusinessId invoiceId)
   maybe
     (return Nothing)
     ( \entity -> do
@@ -156,10 +158,10 @@ getInvoices start stop = do
   records <- selectList [] [Desc InvoiceRecordYear, Desc InvoiceRecordMonthNumber, OffsetBy start, LimitTo (stop - start)]
   mapM fetchDependencies records
 
-insertInvoice :: MonadIO m => UUID -> UUID -> SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
+insertInvoice :: MonadIO m => BusinessId Customer -> BusinessId Company -> SpecificMonth -> [ReportEntry] -> Day -> Day -> ReaderT SqlBackend m Invoice
 insertInvoice customerId companyId specificMonth entries today paymentDay = do
-  maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
-  maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
+  maybeCustomer <- getBy . UniqueCustomerBusinessId  $ customerId
+  maybeCompany <- getBy . UniqueCompanyBusinessId  $ companyId
   newFollowUpNumber <- CompanyRepository.nextNumber companyId
   customerRecord <- maybe (throw (RepositoryError "Customer not found, wrong id")) return maybeCustomer
   companyRecord <- maybe (throw (RepositoryError "Company not found, wrong id")) return maybeCompany

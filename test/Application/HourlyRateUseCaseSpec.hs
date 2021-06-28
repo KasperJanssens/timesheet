@@ -2,39 +2,41 @@
 
 module Application.HourlyRateUseCaseSpec where
 
-import qualified Application.CompanyService       as CompanyService
-import qualified Application.CustomerService      as CustomerService
-import qualified Application.DailyService         as DailyService
-import qualified Application.InvoiceService       as InvoiceService
-import           Application.MonthlyService       (UninvoicedWork (..))
-import qualified Application.MonthlyService       as MonthlyService
+import qualified Application.CompanyService         as CompanyService
+import qualified Application.CustomerService        as CustomerService
+import qualified Application.DailyService           as DailyService
+import qualified Application.InvoiceService         as InvoiceService
+import           Application.MonthlyService         (UninvoicedWork (..))
+import qualified Application.MonthlyService         as MonthlyService
 import           Common.Helper
-import           Control.Monad                    (void)
-import           Control.Monad.IO.Class           (liftIO)
-import           Data.Either                      (isRight)
-import           Data.Time                        (fromGregorian)
-import qualified Data.UUID.V4                     as UUID
-import           Domain.Company                   (Company (..))
-import qualified Domain.Company                   as Company
-import           Domain.Customer                  (VATNumber (..))
-import qualified Domain.Customer                  as Customer
+import           Control.Monad                      (void)
+import           Control.Monad.IO.Class             (liftIO)
+import           Data.Either                        (isRight)
+import           Data.Time                          (fromGregorian)
+import qualified Data.UUID.V4                       as UUID
+import           Domain.Company                     (Company (..))
+import qualified Domain.Company                     as Company
+import           Domain.Customer                    (VATNumber (..))
+import qualified Domain.Customer                    as Customer
 import           Domain.Daily
-import qualified Domain.Invoice                   as Invoice
-import           Domain.Monthly                   (SpecificMonth (..))
+import qualified Domain.Invoice                     as Invoice
+import           Domain.Monthly                     (SpecificMonth (..))
 import           Domain.MonthlyId
-import qualified Domain.MonthlyReport             as MonthlyReport
+import qualified Domain.MonthlyReport               as MonthlyReport
 import           ExternalAPI.NewTypes.NewCompany
-import qualified ExternalAPI.NewTypes.NewCompany  as NewCompany
-import           ExternalAPI.NewTypes.NewCustomer (NewCustomer (..))
-import qualified ExternalAPI.NewTypes.NewCustomer as NewCustomer
+import qualified ExternalAPI.NewTypes.NewCompany    as NewCompany
+import           ExternalAPI.NewTypes.NewCustomer   (NewCustomer (..))
+import qualified ExternalAPI.NewTypes.NewCustomer   as NewCustomer
 import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice
 import           Helper.DatabaseHelper
 import           Helper.TestHelper
+import qualified InternalAPI.Persistence.BusinessId as BusinessId
 import           Test.Hspec
 
+
 fromUninvoiced :: UninvoicedWork -> MonthlyId
-fromUninvoiced (UninvoicedWork (SpecificMonth y m) customer company) = MonthlyId y m (Customer.id customer) (Company.id company)
+fromUninvoiced (UninvoicedWork (SpecificMonth y m) customer company) = MonthlyId y m (BusinessId.uuid $ Customer.id customer) (BusinessId.uuid $ Company.id company)
 
 spec :: Spec
 spec = around withDatabase $

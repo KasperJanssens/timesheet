@@ -29,6 +29,7 @@ import ExternalAPI.NewTypes.NewQuote
 import ExternalAPI.WorkTypeJson
 import Numeric.Natural (Natural)
 import Servant
+import InternalAPI.Persistence.BusinessId
 
 type XTotalCountHeader v = Headers '[Header "X-Total-Count" Int] v
 
@@ -56,27 +57,27 @@ type MonthlyApi =
 type CustomerApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Customer])
     :<|> ReqBody '[JSON] NewCustomer :> Post '[JSON] Customer
-    :<|> Capture "id" UUID :> Get '[JSON] Customer
+    :<|> Capture "id" (BusinessId Customer) :> Get '[JSON] Customer
 
 type CompanyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Company])
     :<|> ReqBody '[JSON] NewCompany :> Post '[JSON] Company
-    :<|> Capture "id" (ExternalBusinessId CompanyService) :> Get '[JSON] Company
+    :<|> Capture "id" (BusinessId Company) :> Get '[JSON] Company
 
 type InvoiceApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Invoice])
     :<|> ReqBody '[JSON] NewInvoice :> Post '[JSON] Invoice
-    :<|> Capture "id" UUID :> Get '[JSON] Invoice
+    :<|> Capture "id" (BusinessId Invoice) :> Get '[JSON] Invoice
 
 type QuoteApi =
   QueryParam "filter" QuoteFilter :> QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [Quote])
     :<|> ReqBody '[JSON] NewQuote :> Post '[JSON] Quote
-    :<|> Capture "id" UUID :> Get '[JSON] Quote
+    :<|> Capture "id" (BusinessId Quote) :> Get '[JSON] Quote
 
 type FixedPriceInvoiceApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [FixedPriceInvoice])
     :<|> ReqBody '[JSON] NewFixedPriceInvoice :> Post '[JSON] FixedPriceInvoice
-    :<|> Capture "id" UUID :> Get '[JSON] FixedPriceInvoice
+    :<|> Capture "id" (BusinessId FixedPriceInvoice) :> Get '[JSON] FixedPriceInvoice
 
 type WebApi =
   "v1" :> "daily" :> DailyApi

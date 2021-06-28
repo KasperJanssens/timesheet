@@ -4,20 +4,21 @@
 
 module ExternalAPI.FrontEndTypes.MonthlyListJson where
 
-import           Application.MonthlyService (UninvoicedWork (..))
+import           Application.MonthlyService         (UninvoicedWork (..))
 import           Common.Helper
-import           Data.Aeson                 (FromJSON, ToJSON)
-import           Data.Text                  (Text)
-import qualified Data.Text                  as Text
-import           Data.UUID                  (UUID)
-import qualified Data.UUID                  as UUID
+import           Data.Aeson                         (FromJSON, ToJSON)
+import           Data.Text                          (Text)
+import qualified Data.Text                          as Text
+import           Data.UUID                          (UUID)
+import qualified Data.UUID                          as UUID
 import           Domain.Company
-import qualified Domain.Company             as Company
+import qualified Domain.Company                     as Company
 import           Domain.Customer
-import qualified Domain.Customer            as Customer
-import           Domain.Monthly             (SpecificMonth (..))
+import qualified Domain.Customer                    as Customer
+import           Domain.Monthly                     (SpecificMonth (..))
 import           Domain.MonthlyId
-import           GHC.Generics               (Generic)
+import           GHC.Generics                       (Generic)
+import           InternalAPI.Persistence.BusinessId
 
 data MonthlyListJson = MonthlyListJson
   { id       :: MonthlyId,
@@ -33,7 +34,7 @@ from (UninvoicedWork specMonth@(SpecificMonth y m) customer company) =
   MonthlyListJson (toId specMonth customer company) m (fromIntegral y) company customer
 
 createId :: SpecificMonth -> Customer -> Company -> Text
-createId (SpecificMonth y m) (Customer customerId _ _ _ _ _ _) (Company companyId _ _ _ _ _ _ _) =
+createId (SpecificMonth y m) (Customer (BusinessId customerId) _ _ _ _ _ _) (Company (BusinessId companyId) _ _ _ _ _ _ _) =
   let yearText = intToText (fromIntegral y)
    in let monthText = intToText m
        in let customerIdText = UUID.toText customerId
@@ -41,7 +42,7 @@ createId (SpecificMonth y m) (Customer customerId _ _ _ _ _ _) (Company companyI
                in Text.intercalate "_" [yearText, monthText, customerIdText, companyIdText]
 
 toId :: SpecificMonth -> Customer -> Company -> MonthlyId
-toId (SpecificMonth y m) customer company = MonthlyId y m (Customer.id customer) (Company.id company)
+toId (SpecificMonth y m) customer company = MonthlyId y m (uuid . Customer.id  $  customer) (uuid . Company.id  $  company)
 
 fromId :: Text -> Maybe MonthlyId
 fromId textId =

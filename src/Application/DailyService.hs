@@ -11,10 +11,14 @@ import           Data.UUID                               (UUID)
 import qualified Data.UUID.V4                            as UUID
 import           Database.Persist.Postgresql             (ConnectionString,
                                                           withPostgresqlPool)
-import           Domain.Daily                            (Daily (..), WorkPack (..))
+import           Domain.Company                          (Company (..))
+import           Domain.Customer                         (Customer (..))
+import           Domain.Daily                            (Daily (..),
+                                                          WorkPack (..))
 import           Domain.Monthly                          (SpecificMonth (..))
 import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewDaily           (NewDaily (..))
+import           InternalAPI.Persistence.BusinessId
 import qualified InternalAPI.Persistence.DailyRepository as DailyRepository
 import qualified InternalAPI.Persistence.Database        as DB
 import           Numeric.Natural                         (Natural)
@@ -28,7 +32,7 @@ list from to = do
       total <- DailyRepository.countDailies
       return (total, dailies)
 
-get :: UUID -> AppM (Maybe Daily)
+get :: BusinessId Daily -> AppM (Maybe Daily)
 get dailyId = do
   pool <- asks poel
   DB.executeInPool pool $
@@ -36,7 +40,7 @@ get dailyId = do
       DailyRepository.findByDay dailyId
 
 
-delete :: UUID -> AppM (Maybe Daily)
+delete :: BusinessId Daily -> AppM (Maybe Daily)
 delete dailyId = do
   pool <- asks poel
   DB.executeInPool pool $
@@ -50,12 +54,12 @@ delete dailyId = do
 --      DailyRepository.deleteDaily dailyId
 --      return maybeDay
 
-getAllForMonth :: UUID -> UUID -> SpecificMonth -> AppM [Daily]
+getAllForMonth :: BusinessId Company -> BusinessId Customer -> SpecificMonth -> AppM [Daily]
 getAllForMonth companyId customerId (SpecificMonth y m) = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      DailyRepository.workPacksForMonth companyId customerId y m
+      DailyRepository.workPacksForMonth customerId companyId y m
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
 insert :: NewDaily -> AppM Daily
@@ -66,10 +70,10 @@ insert (NewDaily d newWps cId cVat) = do
     mapM
       ( \(NewWorkPack a w d) -> do
           uuid <- liftIO UUID.nextRandom
-          return $ WorkPack uuid a w d
+          return $ WorkPack (BusinessId uuid) a w d
       )
       newWps
-  let daily = Daily uuid d wps cId cVat False
+  let daily = Daily (BusinessId uuid) d wps cId cVat False
   void $
     DB.executeInPool pool $
       do

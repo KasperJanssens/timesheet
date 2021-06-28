@@ -21,7 +21,7 @@ spec = around withDatabase $
     it "Should list, insert, read, list, delete, get" $ \connString -> do
       dailiesBefore <- runWithoutPool connString $ CustomerRepository.getCustomers 0 10
       businessId <- UUID.nextRandom
-      let customer = Customer businessId "jos" "de straat" "de stad" (VATNumber "BEsomethingsomething")  (Just 75.0) 30
+      let customer = Customer (BusinessId businessId) "jos" "de straat" "de stad" (VATNumber "BEsomethingsomething")  (Just 75.0) 30
       recordId <- runWithoutPool connString $ CustomerRepository.insertCustomer customer
       --    TODO this is not great, the packaging in business id should be avoided
       maybeRes <- runWithoutPool connString $ CustomerRepository.findByBusinessId $ BusinessId businessId
@@ -42,4 +42,4 @@ spec = around withDatabase $
       shouldBeDeleted <- runWithoutPool connString $ CustomerRepository.findByBusinessId $ BusinessId businessId
 
       shouldBeDeleted `shouldSatisfy` null
-    
+

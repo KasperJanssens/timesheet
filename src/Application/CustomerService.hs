@@ -21,7 +21,7 @@ import qualified InternalAPI.Persistence.Database           as DB
 import           Numeric.Natural                            (Natural)
 import           Servant.Server.Internal.ServerError        (err404, errBody)
 
-determinePaymentDate :: Day -> UUID -> AppM Day
+determinePaymentDate :: Day -> BusinessId Customer -> AppM Day
 determinePaymentDate today customerId = do
   maybeCustomer <- get customerId
   maybe (throwError $ err404 {errBody = "Could not find customer"}) (return . determinePaymentDate' today) maybeCustomer
@@ -38,12 +38,12 @@ list from to = do
       total <- CustomerRepository.countCustomers
       return (total, dailies)
 
-get :: UUID -> AppM (Maybe Customer)
+get ::  BusinessId Customer -> AppM (Maybe Customer)
 get businessId = do
   pool <- asks poel
   DB.executeInPool pool $
     do
-      CustomerRepository.findByBusinessId $ BusinessId businessId
+      CustomerRepository.findByBusinessId businessId
 
 delete :: UUID -> AppM (Maybe Customer)
 delete businessId = do
@@ -59,7 +59,7 @@ insert :: NewCustomer -> AppM Customer
 insert (NewCustomer n vat addressStreet addressCity h paymentTerm) = do
   pool <- asks poel
   businessId <- liftIO UUID.nextRandom
-  let customer = Customer businessId n addressStreet addressCity vat h paymentTerm
+  let customer = Customer (BusinessId businessId) n addressStreet addressCity vat h paymentTerm
   void $
     DB.executeInPool pool $
       do

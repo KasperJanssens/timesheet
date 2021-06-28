@@ -9,9 +9,10 @@ import           Data.Text    (Text)
 import           Data.UUID    (UUID)
 import qualified Data.UUID.V4 as UUID
 import           GHC.Generics (Generic)
+import InternalAPI.Persistence.BusinessId
 
 data Company = Company
-  { id                :: UUID,
+  { id                :: BusinessId Company,
     name              :: Text,
     vatNumber         :: Text,
     addressStreet     :: Text,

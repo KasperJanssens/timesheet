@@ -8,6 +8,7 @@ import           Data.Time.Clock.POSIX                   (getCurrentTime)
 import           Data.UUID                               (UUID)
 import           Domain.Quote
 import           ExternalAPI.NewTypes.NewQuote
+import           InternalAPI.Persistence.BusinessId      (BusinessId)
 import qualified InternalAPI.Persistence.Database        as DB
 import qualified InternalAPI.Persistence.QuoteRepository as QuoteRepository
 import           Numeric.Natural                         (Natural)
@@ -18,8 +19,8 @@ listNonInvoiced = do
   DB.executeInPool pool $ do
     liftIO $ print " Listing non invoiced stuff"
     QuoteRepository.listNonInvoiced
-    
-    
+
+
 list :: Natural -> Natural -> AppM (Int, [Quote])
 list from to = do
   pool <- asks poel
@@ -28,7 +29,7 @@ list from to = do
     amount <- QuoteRepository.countQuotes
     return (amount, invoices)
 
-get :: UUID -> AppM (Maybe Quote)
+get :: BusinessId Quote -> AppM (Maybe Quote)
 get id = do
   pool <- asks poel
   DB.executeInPool pool $ QuoteRepository.getQuote id

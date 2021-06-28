@@ -27,6 +27,8 @@ import           Data.UUID                                           (UUID)
 import qualified Data.UUID.V4                                        as UUID
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
+import           Domain.Customer
+import           Domain.FixedPriceInvoice
 import           Domain.MonthlyReport                                (VATReport (..))
 import           Domain.Quote
 import           InternalAPI.Persistence.BusinessId                  (BusinessId (..))
@@ -42,7 +44,7 @@ share
   [mkPersist sqlSettings, mkMigrate "migrateQuote"]
   [persistLowerCase|
 QuoteRecord
-    businessId BusinessId
+    businessId (BusinessId Quote)
     totalAmount Double
     customerLink CustomerRecordId
     companyLink CompanyRecordId
@@ -65,14 +67,14 @@ createQuoteRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> Int -> Doubl
 createQuoteRecord uuid customerId companyId followUpNumber total dayOfQuote termsOfDelivery description =
   QuoteRecord (BusinessId uuid) total customerId companyId followUpNumber dayOfQuote description termsOfDelivery Nothing
 
-toQuote' :: UUID -> Int -> Double -> Day -> Text -> Text ->  CustomerRecord -> CompanyRecord -> Quote
-toQuote' id invoiceId totalExcl dayOfQuote termsOfDelivery description  customerRecord companyRecord =
+toQuote' :: BusinessId Quote -> Int -> Double -> Day -> Text -> Text ->  CustomerRecord -> CompanyRecord -> Quote
+toQuote' businessId invoiceId totalExcl dayOfQuote termsOfDelivery description  customerRecord companyRecord =
   let total = totalExcl * 1.21
    in let totalVat = total - totalExcl
        in let customer = CustomerRepository.to customerRecord
            in let company = CompanyRepository.to companyRecord
                in Quote
-                    id
+                    businessId
                     (toStrict . toLazyText . decimal $ invoiceId)
                     (VATReport totalExcl totalVat total)
                     customer
@@ -82,11 +84,11 @@ toQuote' id invoiceId totalExcl dayOfQuote termsOfDelivery description  customer
                     (Text.pack . showGregorian $ dayOfQuote)
 
 toQuote :: QuoteRecord -> CustomerRecord -> CompanyRecord -> Quote
-toQuote (QuoteRecord (BusinessId id) totalExcl _ _ quoteId dayOfQuote description termsOfDelivery _) = toQuote' id quoteId totalExcl dayOfQuote description termsOfDelivery
+toQuote (QuoteRecord businessId totalExcl _ _ quoteId dayOfQuote description termsOfDelivery _) = toQuote' businessId quoteId totalExcl dayOfQuote description termsOfDelivery
 
-getQuote :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe Quote)
-getQuote uuid = do
-  maybeEntity <- getBy (UniqueQuoteBusinessId (BusinessId uuid))
+getQuote :: MonadIO m => BusinessId Quote -> ReaderT SqlBackend m (Maybe Quote)
+getQuote businessId = do
+  maybeEntity <- getBy (UniqueQuoteBusinessId  businessId)
   maybe
     (return Nothing)
     ( \quoteRecordEntity -> do
@@ -122,9 +124,9 @@ listNonInvoiced = do
   mapM (retrieveCustomer . entityVal) records
 
 --TODO companyId instead of companyVat
-insertQuote :: MonadIO m => UUID -> Text -> Double -> Day -> Text -> Text ->  ReaderT SqlBackend m Quote
+insertQuote :: MonadIO m => BusinessId Customer -> Text -> Double -> Day -> Text -> Text ->  ReaderT SqlBackend m Quote
 insertQuote customerId companyVat total today termsOfDelivery description  = do
-  maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
+  maybeCustomer <- getBy . UniqueCustomerBusinessId  $ customerId
   maybeCompany <- getBy . UniqueCompanyVAT $ companyVat
   newFollowUpNumber <- CompanyRepository.nextQuoteNumber companyVat
   uuid <- liftIO UUID.nextRandom
@@ -137,12 +139,12 @@ insertQuote customerId companyVat total today termsOfDelivery description  = do
 
   let quoteRecord = createQuoteRecord uuid customerRecordId companyRecordId newFollowUpNumber total today termsOfDelivery description
   _ <- insert quoteRecord
-  return $ toQuote' uuid newFollowUpNumber total today termsOfDelivery description customer company
+  return $ toQuote' (BusinessId uuid) newFollowUpNumber total today termsOfDelivery description customer company
 
-linkInvoice :: MonadIO m => UUID -> UUID -> ReaderT SqlBackend m ()
+linkInvoice :: MonadIO m => BusinessId FixedPriceInvoice -> BusinessId Quote -> ReaderT SqlBackend m ()
 linkInvoice invoiceId quoteId = do
-  maybeInvoice <- getBy (UniqueFixedPriceBusinessId (BusinessId invoiceId))
-  maybeQuote <- getBy (UniqueQuoteBusinessId (BusinessId quoteId))
+  maybeInvoice <- getBy (UniqueFixedPriceBusinessId  invoiceId)
+  maybeQuote <- getBy (UniqueQuoteBusinessId quoteId)
   invoice <- liftIO $ maybe (throw $ RepositoryError "Invoice not found") return maybeInvoice
   quote <- liftIO $ maybe (throw $ RepositoryError "Quote not found") return maybeQuote
   let quoteId = entityKey quote
