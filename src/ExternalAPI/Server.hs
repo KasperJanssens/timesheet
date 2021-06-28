@@ -17,8 +17,6 @@ import qualified Application.InvoiceService as InvoiceService
 import qualified Application.MonthlyService as MonthlyService
 import qualified Application.QuoteService as QuoteService
 import Application.ServiceClass
-  ( atomically,
-  )
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (runStderrLoggingT)
 import Control.Monad.Reader (asks, runReaderT, ReaderT)
