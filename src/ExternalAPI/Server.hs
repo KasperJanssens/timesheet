@@ -17,6 +17,9 @@ import qualified Application.InvoiceService as InvoiceService
 import qualified Application.MonthlyService as MonthlyService
 import qualified Application.QuoteService as QuoteService
 import Application.ServiceClass
+import           Control.Concurrent.STM                    (atomically)
+import           Control.Concurrent.STM.TVar               (newTVarIO,
+                                                            stateTVar)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (runStderrLoggingT)
 import Control.Monad.Reader (asks, runReaderT, ReaderT)
@@ -30,8 +33,7 @@ import Database.Persist.Postgresql
   )
 import Domain.Company (Company)
 import Domain.Customer (Customer)
-import Domain.Daily (allWorkTypes)
-import Domain.ExternalBusinessId (CompanyService, ExternalBusinessId)
+import           Domain.Daily                              (allWorkTypes, Daily)
 import Domain.FixedPriceInvoice (FixedPriceInvoice)
 import Domain.Invoice (Invoice)
 import Domain.Quote (Quote)
@@ -48,6 +50,7 @@ import ExternalAPI.NewTypes.NewFixedPriceInvoice (NewFixedPriceInvoice (..))
 import ExternalAPI.NewTypes.NewInvoice (NewInvoice (..))
 import ExternalAPI.NewTypes.NewQuote (NewQuote (..))
 import ExternalAPI.WorkTypeJson
+import           InternalAPI.Persistence.BusinessId
 import qualified InternalAPI.Persistence.Database as Database
 import qualified Network.HTTP.Types as HttpTypes
 import Network.Wai (Middleware)
@@ -56,8 +59,6 @@ import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors
 import Numeric.Natural (Natural)
 import Servant
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (stateTVar, newTVarIO)
 
 runWithState :: State -> AppM a -> Handler a
 runWithState s x = do
@@ -101,12 +102,12 @@ listDaily (Just start) (Just end) = do
   return $ addHeader total $ fromDaily <$> dailies
 listDaily _ _ = throwError $ err404 {errBody = "listing needs to provide a start and end"}
 
-deleteDaily :: UUID -> AppM DailyJson
+deleteDaily :: BusinessId Daily -> AppM DailyJson
 deleteDaily dailyId = do
   maybeRes <- DailyService.delete dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
-getDaily :: UUID -> AppM DailyJson
+getDaily :: BusinessId Daily -> AppM DailyJson
 getDaily dailyId = do
   maybeRes <- DailyService.get dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
@@ -129,7 +130,7 @@ deleteCustomer businessId = do
   maybeRes <- CustomerService.delete businessId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) return maybeRes
 
-getCustomer :: UUID -> AppM Customer
+getCustomer :: BusinessId Customer -> AppM Customer
 getCustomer businessId = do
   maybeRes <- CustomerService.get businessId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) return maybeRes
@@ -151,7 +152,7 @@ listCompany _ _ = do
   allCompanies <- CompanyService.listAll
   return $ addHeader (length allCompanies) allCompanies
 
-getCompany :: ExternalBusinessId CompanyService -> AppM Company
+getCompany :: BusinessId Company -> AppM Company
 getCompany businessId = do
   maybeRes <- CompanyService.get businessId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) return maybeRes
@@ -198,17 +199,17 @@ createFixedPriceInvoice = FixedPriceInvoiceService.insert
 createQuote :: NewQuote -> AppM Quote
 createQuote = QuoteService.insert
 
-getInvoice :: UUID -> AppM Invoice
+getInvoice :: BusinessId Invoice -> AppM Invoice
 getInvoice invoiceId = do
   maybeInvoice <- InvoiceService.get invoiceId
   maybe (throwError $ err404 {errBody = "Could not find invoice"}) return maybeInvoice
 
-getFixedPriceInvoice :: UUID -> AppM FixedPriceInvoice
+getFixedPriceInvoice :: BusinessId FixedPriceInvoice -> AppM FixedPriceInvoice
 getFixedPriceInvoice fixedPriceInvoiceId = do
   maybeFixedPriceInvoice <- FixedPriceInvoiceService.get fixedPriceInvoiceId
   maybe (throwError $ err404 {errBody = "Could not find ficed price invoice"}) return maybeFixedPriceInvoice
 
-getQuote :: UUID -> AppM Quote
+getQuote :: BusinessId Quote -> AppM Quote
 getQuote quoteId = do
   maybeQuote <- QuoteService.get quoteId
   maybe (throwError $ err404 {errBody = "Could not find quote"}) return maybeQuote

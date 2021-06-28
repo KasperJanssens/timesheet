@@ -35,7 +35,7 @@ share
   [mkPersist sqlSettings, mkMigrate "migrateCompany"]
   [persistLowerCase|
 CompanyRecord
-    businessId BusinessId
+    businessId (BusinessId Company)
     name Text
     vatNumber Text
     addressStreet Text
@@ -55,7 +55,7 @@ countCompanies :: MonadIO m => ReaderT SqlBackend m Int
 countCompanies = count allCompanies
 
 to :: CompanyRecord -> Company
-to (CompanyRecord (BusinessId uuid) n v a1 a2 b c q) = Company uuid n v a1 a2 b c q
+to (CompanyRecord businessId n v a1 a2 b c q) = Company businessId n v a1 a2 b c q
 
 from :: UUID -> NewCompany -> CompanyRecord
 from uuid (NewCompany n v a1 a2 b c q) = CompanyRecord (BusinessId uuid) n v a1 a2 b c q
@@ -65,9 +65,9 @@ getCompanyByVat vatNumber = do
   companyEntity <- getBy (UniqueCompanyVAT vatNumber)
   return $ to . entityVal <$> companyEntity
 
-getCompany :: MonadIO m => ExternalBusinessId CompanyService -> ReaderT SqlBackend m (Maybe Company)
+getCompany :: MonadIO m => BusinessId Company -> ReaderT SqlBackend m (Maybe Company)
 getCompany businessId = do
-  companyEntity <- getBy (UniqueCompanyBusinessId (BusinessId businessId))
+  companyEntity <- getBy (UniqueCompanyBusinessId  businessId)
   return $ to . entityVal <$> companyEntity
 
 getCompanies :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Company]
@@ -80,10 +80,10 @@ getAllCompanies = do
   records <- selectList [] [Desc CompanyRecordVatNumber]
   return $ map (to . entityVal) records
 
-insertCompany :: MonadIO m => UUID -> NewCompany -> ReaderT SqlBackend m Company
-insertCompany uuid newCompany@(NewCompany n v a1 a2 b c q) = do
+insertCompany :: MonadIO m => BusinessId Company  -> NewCompany -> ReaderT SqlBackend m Company
+insertCompany businessId@(BusinessId uuid) newCompany@(NewCompany n v a1 a2 b c q) = do
   void $ insert (from uuid newCompany)
-  return $ Company uuid n v a1 a2 b c q
+  return $ Company businessId n v a1 a2 b c q
 
 upWithNumber :: UTCTime -> Maybe Int -> Int
 upWithNumber today Nothing =
@@ -96,9 +96,9 @@ upWithNumber today (Just cur) =
             then cur + 1
             else (curYear * 1000) + 1
 
-nextNumber :: MonadIO m => UUID -> ReaderT SqlBackend m Int
-nextNumber companyId = do
-  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId . BusinessId $ companyId)
+nextNumber :: MonadIO m => BusinessId Company -> ReaderT SqlBackend m Int
+nextNumber companyBusinessId@(BusinessId companyId) = do
+  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId  companyBusinessId)
   companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyEntity
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastInvoiceFollowUpNumber $ entityVal companyEntity

@@ -27,7 +27,7 @@ share
   [mkPersist sqlSettings, mkMigrate "migrateCustomer"]
   [persistLowerCase|
 CustomerRecord
-    businessId BusinessId
+    businessId (BusinessId Customer)
     name Text
     addressStreet Text
     addressCity Text
@@ -41,7 +41,7 @@ CustomerRecord
 |]
 
 from :: UTCTime -> Customer -> CustomerRecord
-from now (Customer id name  addressStreet addressCity (VATNumber vat) hourly paymentTerm) = CustomerRecord (BusinessId id) name  addressStreet addressCity vat hourly now paymentTerm
+from now (Customer businessId name  addressStreet addressCity (VATNumber vat) hourly paymentTerm) = CustomerRecord businessId name  addressStreet addressCity vat hourly now paymentTerm
 
 to :: CustomerRecord -> Customer
 to (CustomerRecord businessId name addressStreet addressCity vatNumber hourlyRate _ paymentTerm) = Customer (coerce businessId) name   addressStreet addressCity (VATNumber vatNumber) hourlyRate paymentTerm
@@ -52,7 +52,7 @@ allCustomers = []
 countCustomers :: MonadIO m => ReaderT SqlBackend m Int
 countCustomers = count allCustomers
 
-findByBusinessId :: (MonadIO m) => BusinessId -> ReaderT SqlBackend m (Maybe Customer)
+findByBusinessId :: (MonadIO m) => BusinessId Customer -> ReaderT SqlBackend m (Maybe Customer)
 findByBusinessId businessId = do
   maybeCustomer <- getBy (UniqueCustomerBusinessId businessId)
   return $ fmap (to . entityVal) maybeCustomer
@@ -73,6 +73,6 @@ getAllCustomers = do
   records <- selectList [] [Desc CustomerRecordCreationDate]
   return $ map (to . entityVal) records
 
-deleteCustomer :: MonadIO m => BusinessId -> ReaderT SqlBackend m ()
+deleteCustomer :: MonadIO m => BusinessId Customer -> ReaderT SqlBackend m ()
 deleteCustomer businessId = do
   deleteBy (UniqueCustomerBusinessId businessId)

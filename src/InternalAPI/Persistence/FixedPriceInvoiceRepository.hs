@@ -24,6 +24,8 @@ import           Data.UUID                                  (UUID)
 import qualified Data.UUID.V4                               as UUID
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
+import           Domain.Company                             (Company)
+import           Domain.Customer                            (Customer)
 import           Domain.FixedPriceInvoice                   (FixedPriceInvoice (..))
 import           Domain.MonthlyReport
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
@@ -37,7 +39,7 @@ share
   [mkPersist sqlSettings, mkMigrate "migrateFixedPriceInvoice"]
   [persistLowerCase|
 FixedPriceInvoiceRecord
-    businessId BusinessId
+    businessId (BusinessId FixedPriceInvoice)
     totalAmount Double
     dayOfInvoice Day
     dayOfPayment Day
@@ -59,14 +61,14 @@ createFixedPriceInvoiceRecord :: UUID -> CustomerRecordId -> CompanyRecordId -> 
 createFixedPriceInvoiceRecord uuid customerId companyId followUpNumber today paymentDay description  total =
   FixedPriceInvoiceRecord (BusinessId uuid) total today paymentDay description customerId companyId followUpNumber
 
-toFixedPriceInvoice' :: UUID -> Int -> Day -> Day -> Text -> Double -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
-toFixedPriceInvoice' id invoiceId today paymentDay description totalExcl customerRecord companyRecord =
+toFixedPriceInvoice' :: BusinessId FixedPriceInvoice -> Int -> Day -> Day -> Text -> Double -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
+toFixedPriceInvoice' businessId invoiceId today paymentDay description totalExcl customerRecord companyRecord =
   let total = totalExcl * 1.21
    in let totalVat = total - totalExcl
        in let customer = CustomerRepository.to customerRecord
            in let company = CompanyRepository.to companyRecord
                in FixedPriceInvoice
-                    id
+                    businessId
                     (Common.intToText invoiceId)
                     (VATReport totalExcl totalVat total)
                     customer
@@ -76,11 +78,11 @@ toFixedPriceInvoice' id invoiceId today paymentDay description totalExcl custome
                     description
 
 toFixedPriceInvoice :: FixedPriceInvoiceRecord -> CustomerRecord -> CompanyRecord -> FixedPriceInvoice
-toFixedPriceInvoice (FixedPriceInvoiceRecord (BusinessId id) totalExcl today  paymentDay description _ _ invoiceId) = toFixedPriceInvoice' id invoiceId today paymentDay description  totalExcl
+toFixedPriceInvoice (FixedPriceInvoiceRecord businessId totalExcl today  paymentDay description _ _ invoiceId) = toFixedPriceInvoice' businessId invoiceId today paymentDay description  totalExcl
 
-getFixedPriceInvoice :: MonadIO m => UUID -> ReaderT SqlBackend m (Maybe FixedPriceInvoice)
+getFixedPriceInvoice :: MonadIO m => BusinessId FixedPriceInvoice -> ReaderT SqlBackend m (Maybe FixedPriceInvoice)
 getFixedPriceInvoice uuid = do
-  maybeEntity <- getBy (UniqueFixedPriceBusinessId (BusinessId uuid))
+  maybeEntity <- getBy (UniqueFixedPriceBusinessId uuid)
   maybe
     (return Nothing)
     ( \fixedPriceInvoiceRecordEntity -> do
@@ -110,10 +112,10 @@ getFixedPriceInvoices start stop = do
   records <- selectList [] [Desc FixedPriceInvoiceRecordInvoiceFollowUpNumber, OffsetBy start, LimitTo (stop - start)]
   mapM (retrieveCustomer . entityVal) records
 
-insertFixedPriceInvoice :: MonadIO m => UUID -> UUID -> Day -> Day -> Text -> Double -> ReaderT SqlBackend m FixedPriceInvoice
+insertFixedPriceInvoice :: MonadIO m => BusinessId Customer -> BusinessId Company -> Day -> Day -> Text -> Double -> ReaderT SqlBackend m FixedPriceInvoice
 insertFixedPriceInvoice customerId companyId today paymentDay description total  = do
-  maybeCustomer <- getBy . UniqueCustomerBusinessId . BusinessId $ customerId
-  maybeCompany <- getBy . UniqueCompanyBusinessId . BusinessId $ companyId
+  maybeCustomer <- getBy . UniqueCustomerBusinessId  $ customerId
+  maybeCompany <- getBy . UniqueCompanyBusinessId  $ companyId
   newFollowUpNumber <- CompanyRepository.nextNumber companyId
   uuid <- liftIO UUID.nextRandom
   customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
@@ -122,4 +124,4 @@ insertFixedPriceInvoice customerId companyId today paymentDay description total 
   let companyRecordId = entityKey companyRecord
   let fixedPriceRecord = createFixedPriceInvoiceRecord uuid customerRecordId companyRecordId newFollowUpNumber today paymentDay description total
   _ <- insert fixedPriceRecord
-  return $ toFixedPriceInvoice' uuid newFollowUpNumber today paymentDay description total (entityVal customerRecord) (entityVal companyRecord)
+  return $ toFixedPriceInvoice' (BusinessId uuid) newFollowUpNumber today paymentDay description total (entityVal customerRecord) (entityVal companyRecord)

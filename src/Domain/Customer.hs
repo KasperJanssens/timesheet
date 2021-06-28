@@ -3,24 +3,22 @@
 
 module Domain.Customer where
 
-import           Data.Aeson      (FromJSON, ToJSON)
-import           Data.String     (IsString)
-import           Data.Text       (Text)
-import           Data.UUID       (UUID)
-import           GHC.Generics    (Generic)
-import           Numeric.Natural (Natural)
+import           Data.Aeson                         (FromJSON, ToJSON)
+import           Data.Text                          (Text)
+import           GHC.Generics                       (Generic)
+import           InternalAPI.Persistence.BusinessId
 
 --  TODO make this better add validations
 data VATNumber = VATNumber Text deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)
 
 --TODO no need of id, vat number should be unique enough. Fix this
 data Customer = Customer
-  { id          :: UUID,
-    name        :: Text,
+  { id            :: BusinessId Customer,
+    name          :: Text,
     addressStreet :: Text,
-    addressCity :: Text,
-    vatNumber   :: VATNumber,
-    hourlyRate  :: Maybe Double,
-    paymentTerm :: Int
+    addressCity   :: Text,
+    vatNumber     :: VATNumber,
+    hourlyRate    :: Maybe Double,
+    paymentTerm   :: Int
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Ord, Show)

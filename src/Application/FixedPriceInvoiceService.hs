@@ -17,7 +17,9 @@ import           Data.Text                                           (Text)
 import           Data.Time
 import           Data.UUID                                           (UUID)
 import           Database.Persist.Sql                                (SqlBackend)
+import           Domain.Company
 import qualified Domain.Company                                      as Company
+import           Domain.Customer
 import qualified Domain.Customer                                     as Customer
 import           Domain.FixedPriceInvoice
 import qualified Domain.FixedPriceInvoice                            as FixedPriceInvoice
@@ -26,6 +28,7 @@ import qualified Domain.MonthlyReport                                as VATRepor
 import           Domain.Quote
 import qualified Domain.Quote                                        as Quote
 import           ExternalAPI.NewTypes.NewFixedPriceInvoice
+import           InternalAPI.Persistence.BusinessId
 import qualified InternalAPI.Persistence.Database                    as DB
 import           InternalAPI.Persistence.FixedPriceInvoiceRepository as FixedPriceInvoiceRepository
 import           InternalAPI.Persistence.QuoteRepository             as QuoteRepository
@@ -41,12 +44,12 @@ list from to = do
     amount <- FixedPriceInvoiceRepository.countFixedPriceInvoices
     return (amount, invoices)
 
-get :: UUID -> AppM (Maybe FixedPriceInvoice)
+get :: BusinessId FixedPriceInvoice -> AppM (Maybe FixedPriceInvoice)
 get specificUUID = do
   pool <- asks poel
   DB.executeInPool pool $ FixedPriceInvoiceRepository.getFixedPriceInvoice specificUUID
 
-insert' :: Maybe UUID -> Double -> Text -> UUID -> UUID -> AppM FixedPriceInvoice
+insert' :: Maybe (BusinessId Quote) -> Double -> Text -> BusinessId Customer -> BusinessId Company -> AppM FixedPriceInvoice
 insert' maybeQuoteId total description customerId companyId = do
   maybeCustomer <- CustomerService.get customerId
   time <- liftIO getCurrentTime
@@ -60,9 +63,9 @@ insert' maybeQuoteId total description customerId companyId = do
 
 insert :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
 insert (NewFixedPriceInvoice (Left (NonQuote total customerId companyId description))) = insert' Nothing total description customerId companyId
-insert (NewFixedPriceInvoice (Right uuid)) = insertFromQuote uuid
+insert (NewFixedPriceInvoice (Right quoteBusinessId)) = insertFromQuote quoteBusinessId
 
-insertFromQuote :: UUID -> AppM FixedPriceInvoice
+insertFromQuote :: BusinessId Quote -> AppM FixedPriceInvoice
 insertFromQuote quoteId = do
   maybeQuote <- QuoteService.get quoteId
   quote <- maybe (throw (err404 {errBody = "quote not found"})) return maybeQuote

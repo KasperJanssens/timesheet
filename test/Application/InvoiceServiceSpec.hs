@@ -27,6 +27,7 @@ import           ExternalAPI.NewTypes.NewDaily
 import           ExternalAPI.NewTypes.NewInvoice
 import           Helper.DatabaseHelper
 import           Test.Hspec
+import qualified InternalAPI.Persistence.BusinessId as BusinessId
 
 spec :: Spec
 spec = around withDatabase $
@@ -38,7 +39,7 @@ spec = around withDatabase $
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
         let customerId = Domain.Customer.id customer
         let companyId = Domain.Company.id company
-        InvoiceService.insert (MonthlyId 2021 5 customerId companyId)
+        InvoiceService.insert (MonthlyId 2021 5 customerId  companyId)
       invoiceOrErr `shouldSatisfy` isRight
       let invoice = fromRight undefined invoiceOrErr
       Invoice.specificMonth invoice `shouldBe` SpecificMonth 2021 5
@@ -57,7 +58,7 @@ spec = around withDatabase $
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 5) [NewWorkPack 6.0 FUNCDESI "Smos"] (Customer.id customer) (Company.vatNumber company))
         let customerId = Domain.Customer.id customer
         let companyId = Domain.Company.id company
-        InvoiceService.insert (MonthlyId 2021 5 customerId companyId)
+        InvoiceService.insert (MonthlyId 2021 5  customerId  companyId)
       invoiceOrErr `shouldSatisfy` isRight
       let invoice = fromRight undefined invoiceOrErr
       Invoice.specificMonth invoice `shouldBe` SpecificMonth 2021 5

@@ -30,18 +30,21 @@ import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Daily
 import qualified Domain.Daily                               as Daily
+import           Domain.Invoice                             (Invoice)
 import           InternalAPI.Persistence.BusinessId         (BusinessId (..))
 import           InternalAPI.Persistence.CompanyRepository  hiding (to)
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import           InternalAPI.Persistence.InvoiceRepository  (InvoiceRecordId, Unique (UniqueInvoiceBusinessId))
 import           InternalAPI.Persistence.RepositoryError
 import           Safe                                       (headMay)
+import Domain.Customer (Customer)
+import Domain.Company (Company)
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateDaily"]
   [persistLowerCase|
 WorkPackRecord
-    businessId BusinessId
+    businessId (BusinessId WorkPack)
     amount Double
     workType String
     description Text
@@ -50,7 +53,7 @@ WorkPackRecord
     UniqueWorkPackBusinessId businessId
     deriving Show
 DailyRecord
-    businessId BusinessId
+    businessId (BusinessId Daily)
     day Day
     creationDate UTCTime
     monthNumber Int
@@ -68,23 +71,23 @@ conditionallyDelete (Daily dailyId _ _ _ _ False) = deleteDaily dailyId
 conditionallyDelete (Daily _ _ _ _ _ True)        = return ()
 
 toWorkPack :: WorkPackRecord -> WorkPack
-toWorkPack (WorkPackRecord (BusinessId bId) a t d _ _) = WorkPack bId a (read t) d
+toWorkPack (WorkPackRecord  bId a t d _ _) = WorkPack bId a (read t) d
 
 fromWorkPack :: Key DailyRecord -> WorkPack -> WorkPackRecord
-fromWorkPack dailyRecordId (WorkPack bId a t d) = WorkPackRecord (BusinessId bId) a (show t) d dailyRecordId Nothing
+fromWorkPack dailyRecordId (WorkPack bId a t d) = WorkPackRecord bId a (show t) d dailyRecordId Nothing
 
-toDaily :: UUID -> UUID -> Text -> [WorkPack] -> Day -> Bool -> Daily
-toDaily dailyId customerId companyVat workPacks d alreadyInvoiced = Daily dailyId d workPacks customerId companyVat alreadyInvoiced
+toDaily :: BusinessId Daily -> BusinessId Customer -> Text -> [WorkPack] -> Day -> Bool -> Daily
+toDaily dailyId customerId companyVat workPacks d = Daily dailyId d workPacks customerId companyVat
 
 to :: CustomerRecord -> CompanyRecord -> [WorkPackRecord] -> DailyRecord -> Daily
 to customerRecord companyRecord workPackRecords dailyRecord =
   let workPacks = toWorkPack <$> workPackRecords
-   in toDaily (uuid $ dailyRecordBusinessId dailyRecord) (uuid $ customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord) (dailyRecordAlreadyInvoiced dailyRecord)
+   in toDaily ( dailyRecordBusinessId dailyRecord) ( customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord) (dailyRecordAlreadyInvoiced dailyRecord)
 
-workPacksForMonth :: (MonadIO m) => UUID -> UUID -> Int -> Int -> ReaderT SqlBackend m [Daily]
+workPacksForMonth :: (MonadIO m) => BusinessId Customer -> BusinessId Company -> Int -> Int -> ReaderT SqlBackend m [Daily]
 workPacksForMonth customerId companyId year month = do
-  maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
-  maybeCompany <- getBy (UniqueCompanyBusinessId (BusinessId companyId))
+  maybeCustomer <- getBy (UniqueCustomerBusinessId customerId)
+  maybeCompany <- getBy (UniqueCompanyBusinessId companyId)
   customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
   companyRecord <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompany
   records <-
@@ -110,17 +113,9 @@ createDayUniqueConstraint day customerId companyVat = do
   maybeCompany <- getBy (UniqueCompanyVAT companyVat)
   return $ liftA2 (UniqueDay day) (entityKey <$> maybeCompany) (entityKey <$> maybeCustomer)
 
-findByDay :: (MonadIO m) => UUID -> ReaderT SqlBackend m (Maybe Daily)
+findByDay :: (MonadIO m) => BusinessId Daily -> ReaderT SqlBackend m (Maybe Daily)
 findByDay dailyId = do
-  --  Get rid of the fromJust
-  --  maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
-  --  maybeCompany <- getBy (UniqueCompanyVAT companyVat)
-  --  let customerRecord = fromJust maybeCustomer
-  --  let companyRecord = fromJust maybeCompany
-  --  let uniqueConstraint = UniqueDay day (entityKey companyRecord) (entityKey customerRecord)
-  --  maybeUniqueConstraint <- createDayUniqueConstraint day customerId companyVat
-  --  TODO can we do this better? Looks a bit annoying, but there is no liftMaybe or so
-  maybeDaily <- getBy (UniqueDailyBusinessId $ BusinessId dailyId)
+  maybeDaily <- getBy (UniqueDailyBusinessId dailyId)
   maybe
     (return Nothing)
     ( \dailyEntity -> do
@@ -137,9 +132,9 @@ insertDaily :: (MonadIO m) => Daily -> ReaderT SqlBackend m DailyRecordId
 insertDaily (Daily uuid day workPacks customerId companyVat alreadyInvoiced) = do
   now <- liftIO getCurrentTime
   let (year, month, _) = toGregorian day
-  maybeCustomer <- getBy (UniqueCustomerBusinessId (BusinessId customerId))
+  maybeCustomer <- getBy (UniqueCustomerBusinessId customerId)
   maybeCompany <- getBy (UniqueCompanyVAT companyVat)
-  let maybeDailyRecord = liftA2 (DailyRecord (BusinessId uuid) day now month (fromIntegral year) alreadyInvoiced) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
+  let maybeDailyRecord = liftA2 (DailyRecord uuid day now month (fromIntegral year) alreadyInvoiced) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
   dailyRecord <-  liftIO $ maybe (throw $ RepositoryError "Daily record noet found") return  maybeDailyRecord
   dailyRecordId <- insert dailyRecord
   let workPackRecords = fromWorkPack dailyRecordId <$> workPacks
@@ -228,13 +223,13 @@ getDailies start stop = do
   let daList = zip3 records companies customers
   mapM (uncurry3 addWorkPacks) daList
 
-deleteDaily :: (MonadIO m) => UUID -> ReaderT SqlBackend m ()
+deleteDaily :: (MonadIO m) => BusinessId Daily -> ReaderT SqlBackend m ()
 deleteDaily uuid = do
-  deleteBy (UniqueDailyBusinessId (BusinessId uuid))
+  deleteBy (UniqueDailyBusinessId uuid)
 
-markAsInvoiced ::(MonadIO m) => UUID -> ReaderT SqlBackend m ()
+markAsInvoiced ::(MonadIO m) => BusinessId Daily -> ReaderT SqlBackend m ()
 markAsInvoiced businessId = do
-   maybeDaily <- getBy (UniqueDailyBusinessId (BusinessId businessId))
+   maybeDaily <- getBy (UniqueDailyBusinessId  businessId)
    dailyRecord <- liftIO $ maybe (throw $ RepositoryError "Daily not found") return maybeDaily
    let dailyRecordId = entityKey dailyRecord
    update dailyRecordId [DailyRecordAlreadyInvoiced =. True]
@@ -244,12 +239,12 @@ markAllAsInvoiced dailies = do
   let dailyIds = Daily.id <$> dailies
   forM_ dailyIds markAsInvoiced
 
-linkInvoiceToWorkpacks :: (MonadIO m) => [WorkPack] -> UUID -> ReaderT SqlBackend m ()
+linkInvoiceToWorkpacks :: (MonadIO m) => [WorkPack] -> BusinessId Invoice -> ReaderT SqlBackend m ()
 linkInvoiceToWorkpacks wps invoiceBusinessId = do
-  maybeInvoice <- getBy (UniqueInvoiceBusinessId (BusinessId invoiceBusinessId))
+  maybeInvoice <- getBy (UniqueInvoiceBusinessId  invoiceBusinessId)
   invoiceRecord <- liftIO $ maybe (throw $ RepositoryError "Invoice not found") return maybeInvoice
   let invoiceRecordId = entityKey invoiceRecord
   let workPackBIds = wpid <$> wps
-  maybeWorkPackRecordEntities <- mapM (getBy . UniqueWorkPackBusinessId . BusinessId) workPackBIds
+  maybeWorkPackRecordEntities <- mapM (getBy . UniqueWorkPackBusinessId) workPackBIds
   let workPackRecordIds = entityKey <$> catMaybes maybeWorkPackRecordEntities
   forM_ workPackRecordIds (\wpRecordId -> update wpRecordId [WorkPackRecordInvoiceLink =. Just invoiceRecordId])
