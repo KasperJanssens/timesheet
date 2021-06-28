@@ -45,8 +45,8 @@ instance FromHttpApiData QuoteFilter where
 type DailyApi =
   QueryParam "_start" Natural :> QueryParam "_end" Natural :> Get '[JSON] (XTotalCountHeader [DailyJson])
     :<|> ReqBody '[JSON] NewDaily :> Post '[JSON] DailyJson
-    :<|> Capture "id" UUID :> Delete '[JSON] DailyJson
-    :<|> Capture "id" UUID :> Get '[JSON] DailyJson
+    :<|> Capture "id" (BusinessId Daily) :> Delete '[JSON] DailyJson
+    :<|> Capture "id" (BusinessId Daily) :> Get '[JSON] DailyJson
 
 type WorkTypeApi =
   Get '[JSON] (XTotalCountHeader [WorkTypeJson])

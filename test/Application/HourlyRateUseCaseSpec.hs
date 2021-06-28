@@ -36,7 +36,7 @@ import           Test.Hspec
 
 
 fromUninvoiced :: UninvoicedWork -> MonthlyId
-fromUninvoiced (UninvoicedWork (SpecificMonth y m) customer company) = MonthlyId y m (BusinessId.uuid $ Customer.id customer) (BusinessId.uuid $ Company.id company)
+fromUninvoiced (UninvoicedWork (SpecificMonth y m) customer company) = MonthlyId y m ( Customer.id customer) ( Company.id company)
 
 spec :: Spec
 spec = around withDatabase $

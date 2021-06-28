@@ -31,7 +31,7 @@ import           Database.Persist.Postgresql               (ConnectionString,
                                                             createPostgresqlPool)
 import           Domain.Company                            (Company)
 import           Domain.Customer                           (Customer)
-import           Domain.Daily                              (allWorkTypes)
+import           Domain.Daily                              (allWorkTypes, Daily)
 import           Domain.ExternalBusinessId                 (CompanyService,
                                                             ExternalBusinessId)
 import           Domain.FixedPriceInvoice                  (FixedPriceInvoice)
@@ -100,12 +100,12 @@ listDaily (Just start) (Just end) = do
   return $ addHeader total $ fromDaily <$> dailies
 listDaily _ _ = throwError $ err404 {errBody = "listing needs to provide a start and end"}
 
-deleteDaily :: UUID -> AppM DailyJson
+deleteDaily :: BusinessId Daily -> AppM DailyJson
 deleteDaily dailyId = do
   maybeRes <- DailyService.delete dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes
 
-getDaily :: UUID -> AppM DailyJson
+getDaily :: BusinessId Daily -> AppM DailyJson
 getDaily dailyId = do
   maybeRes <- DailyService.get dailyId
   maybe (throwError $ err404 {errBody = "Could not find input id"}) (return . fromDaily) maybeRes

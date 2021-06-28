@@ -41,13 +41,13 @@ insert (MonthlyId y m customerId companyId) = do
   let today = utctDay time
   let specificMonth =  SpecificMonth y m
 --  TODO fix monthly id to have explicit busoiness ids iso uuids
-  paymentDay <- CustomerService.determinePaymentDate today (BusinessId customerId)
-  dailies <- DailyService.getAllForMonth customerId companyId specificMonth
+  paymentDay <- CustomerService.determinePaymentDate today  customerId
+  dailies <- DailyService.getAllForMonth  companyId customerId specificMonth
   let ws = concat $ workpacks <$> dailies
   let entries = createEntries ws
   pool <- asks poel
   DB.executeInPool pool $ do
-    invoice <- InvoiceRepository.insertInvoice (BusinessId customerId) (BusinessId companyId) specificMonth entries today paymentDay
+    invoice <- InvoiceRepository.insertInvoice customerId  companyId specificMonth entries today paymentDay
     DailyRepository.linkInvoiceToWorkpacks ws (Domain.Invoice.id invoice)
     DailyRepository.markAllAsInvoiced dailies
     return invoice
