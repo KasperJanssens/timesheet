@@ -9,8 +9,10 @@ import Data.UUID (UUID)
 import Domain.Monthly
 import Domain.MonthlyId (MonthlyId)
 import GHC.Generics (Generic)
+import Data.Time (Day)
 
 data NewInvoice = NewInvoice
-  { monthlyId :: MonthlyId
+  { monthlyId :: MonthlyId,
+    day        :: Day
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

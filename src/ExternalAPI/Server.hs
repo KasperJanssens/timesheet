@@ -191,7 +191,7 @@ listQuotes (Just Uninvoiced) _ _ = do
   return $ addHeader (length quotes) quotes
 
 createInvoice :: NewInvoice -> AppM Invoice
-createInvoice (NewInvoice monthlyId) = InvoiceService.insert monthlyId
+createInvoice (NewInvoice monthlyId day) = InvoiceService.insert monthlyId day
 
 createFixedPriceInvoice :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
 createFixedPriceInvoice = FixedPriceInvoiceService.insert

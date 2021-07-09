@@ -10,5 +10,4 @@ import           Domain.Customer                    (Customer)
 import           GHC.Generics
 import           InternalAPI.Persistence.BusinessId (BusinessId)
 
---TODO these uuids need to become BusinessIds too
 data MonthlyId = MonthlyId {year :: Int, month :: Int, customerId :: BusinessId Customer, companyId :: BusinessId Company} deriving (FromJSON, ToJSON, Generic, Show, Eq, Read, Ord)

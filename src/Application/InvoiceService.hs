@@ -34,10 +34,10 @@ get invoiceId = do
   pool <- asks poel
   DB.executeInPool pool $ InvoiceRepository.getInvoice invoiceId
 
-insert :: MonthlyId -> AppM Invoice
-insert (MonthlyId y m customerId companyId) = do
-  time <- liftIO getCurrentTime
-  let today = utctDay time
+insert :: MonthlyId -> Day -> AppM Invoice
+insert (MonthlyId y m customerId companyId) today = do
+--  time <- liftIO getCurrentTime
+--  let today = utctDay time
   let specificMonth =  SpecificMonth y m
 --  TODO fix monthly id to have explicit busoiness ids iso uuids
   paymentDay <- CustomerService.determinePaymentDate today  customerId

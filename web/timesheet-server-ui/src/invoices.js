@@ -7,6 +7,7 @@ import {
     SimpleForm,
     SimpleShowLayout,
     SelectInput,
+    DateInput,
     TextField, TextInput, Loading, Error
 } from "react-admin";
 import React from "react";
@@ -68,6 +69,7 @@ export const InvoiceCreate = (props) => {
     return (
         <Create  {...props}>
             <SimpleForm>
+                <DateInput source={"day"} locales={"nl"} label="Day of invoice (can antedate)"/>
                 <SelectInput source={"monthlyId"} choices={monthlyChoices}/>
             </SimpleForm>
         </Create>)

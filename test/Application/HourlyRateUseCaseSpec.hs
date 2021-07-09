@@ -12,7 +12,7 @@ import           Common.Helper
 import           Control.Monad                      (void)
 import           Control.Monad.IO.Class             (liftIO)
 import           Data.Either                        (isRight)
-import           Data.Time                          (fromGregorian)
+import           Data.Time                          (fromGregorian, getCurrentTime, utctDay)
 import qualified Data.UUID.V4                       as UUID
 import           Domain.Company                     (Company (..))
 import qualified Domain.Company                     as Company
@@ -55,7 +55,9 @@ spec = around withDatabase $
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3
         let firstUninvoicedWork = head uninvoicedWork1
-        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork)
+        time <- liftIO getCurrentTime
+        let today = utctDay time
+        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork) today
         let aantalUur1 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice1
         liftIO $ aantalUur1 `shouldBe` 12.5
         expectedInvoiceId1 <- liftIO $ createExpectedInvoiceId "001"
@@ -65,7 +67,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork2 `shouldSatisfy` hasSize 2
 
         let secondUninvoicedWork = head uninvoicedWork2
-        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork)
+        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork) today
         let aantalUur2 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice2
         liftIO $ aantalUur2 `shouldBe` 18.75
         expectedInvoiceId2 <- liftIO $ createExpectedInvoiceId "002"
@@ -76,7 +78,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork3 `shouldSatisfy` hasSize 1
 
         let thirdUninvoicedWork = head uninvoicedWork3
-        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork)
+        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork) today
         let aantalUur3 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice3
         liftIO $ aantalUur3 `shouldBe` 25
         expectedInvoiceId3 <- liftIO $ createExpectedInvoiceId "003"
@@ -101,7 +103,9 @@ spec = around withDatabase $
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3
         let firstUninvoicedWork = head uninvoicedWork1
-        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork)
+        time <- liftIO getCurrentTime
+        let today = utctDay time
+        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork) today
         let aantalUur1 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice1
         liftIO $ aantalUur1 `shouldBe` 12.5
         expectedInvoiceId1 <- liftIO $ createExpectedInvoiceId "001"
@@ -111,7 +115,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork2 `shouldSatisfy` hasSize 2
 
         let secondUninvoicedWork = head uninvoicedWork2
-        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork)
+        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork) today
         let aantalUur2 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice2
         liftIO $ aantalUur2 `shouldBe` 18.75
         expectedInvoiceId2 <- liftIO $ createExpectedInvoiceId "001"
@@ -121,7 +125,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork3 `shouldSatisfy` hasSize 1
 
         let thirdUninvoicedWork = head uninvoicedWork3
-        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork)
+        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork) today
         let aantalUur3 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice3
         liftIO $ aantalUur3 `shouldBe` 25
         expectedInvoiceId3 <- liftIO $ createExpectedInvoiceId "002"
@@ -148,7 +152,9 @@ spec = around withDatabase $
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3
         let firstUninvoicedWork = head uninvoicedWork1
-        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork)
+        time <- liftIO getCurrentTime
+        let today = utctDay time
+        invoice1 <- InvoiceService.insert (fromUninvoiced firstUninvoicedWork) today
         let aantalUur1 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice1
         liftIO $ aantalUur1 `shouldBe` 12.5
         expectedInvoiceId1 <- liftIO $ createExpectedInvoiceId "001"
@@ -158,7 +164,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork2 `shouldSatisfy` hasSize 2
 
         let secondUninvoicedWork = head uninvoicedWork2
-        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork)
+        invoice2 <- InvoiceService.insert (fromUninvoiced secondUninvoicedWork) today
         let aantalUur2 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice2
         liftIO $ aantalUur2 `shouldBe` 18.75
         expectedInvoiceId2 <- liftIO $ createExpectedInvoiceId "001"
@@ -168,7 +174,7 @@ spec = around withDatabase $
         liftIO $ uninvoicedWork3 `shouldSatisfy` hasSize 1
 
         let thirdUninvoicedWork = head uninvoicedWork3
-        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork)
+        invoice3 <- InvoiceService.insert (fromUninvoiced thirdUninvoicedWork) today
         let aantalUur3 = MonthlyReport.totalDays $ Invoice.monthlyReport invoice3
         liftIO $ aantalUur3 `shouldBe` 25
         expectedInvoiceId3 <- liftIO $ createExpectedInvoiceId "002"

@@ -32,17 +32,17 @@ export class InvoicePaper extends React.Component {
                 <div class="address">
                     <section>
                         <h2>Diensten geleverd aan:</h2>
-                        <p><strong>Unifly</strong></p>
-                        <p>Luchthavenlei 7a</p>
-                        <p>2100 Antwerpen</p>
-                        <p>BTW BE 0635 520 937</p>
+                        <p><strong>{this.props.location.state.customer.name}</strong></p>
+                        <p>{this.props.location.state.customer.addressStreet}</p>
+                        <p>{this.props.location.state.customer.addressCity}</p>
+                        <p>BTW {this.props.location.state.customer.vatNumber}</p>
                     </section>
                     <section>
                         <h2>Diensten geleverd door:</h2>
-                        <p><strong>Krondorsoft B.V.B.A.</strong></p>
-                        <p>Ottergemsesteenweg 354</p>
-                        <p>9000 Gent</p>
-                        <p>BTW BE 0893 815 606</p>
+                        <p><strong>{this.props.location.state.company.name}</strong></p>
+                        <p>{this.props.location.state.company.addressStreet}</p>
+                        <p>{this.props.location.state.company.addressCity}</p>
+                        <p>BTW {this.props.location.state.company.vatNumber}</p>
                     </section>
                     <section>
                         <h2>Maand waarop betrekking:</h2>
