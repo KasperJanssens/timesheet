@@ -47,7 +47,7 @@ export const QuoteList = props => {
                 <TextField source={"quoteId"} label={"Quote number"}/>
                 <SelectField source={"customer.id"} choices={selectCustomers}
                              label={"customer"}/>
-                <SelectField source={"company.vatNumber"} choices={selectCompanies}
+                <SelectField source={"company.id"} choices={selectCompanies}
                              label={"company"}/>
             </Datagrid>
         </List>

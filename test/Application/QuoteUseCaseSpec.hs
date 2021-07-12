@@ -27,9 +27,9 @@ spec = around withDatabase $
         runAppM state $ do
           customer <- CustomerService.insert NewCustomer.dummy
           company <- CompanyService.insert NewCompany.dummy
-          quote1 <- QuoteService.insert (NewQuote 100 (Customer.id customer) (Company.vatNumber company) "onnozelheid" "vree rap")
-          quote2 <- QuoteService.insert (NewQuote 200 (Customer.id customer) (Company.vatNumber company) "meer onnozelheid" "vree rap")
-          quote3 <- QuoteService.insert (NewQuote 300 (Customer.id customer) (Company.vatNumber company) "absolute onzin" "vree rap")
+          quote1 <- QuoteService.insert (NewQuote 100 (Customer.id customer) (Company.id company) "onnozelheid" "vree rap")
+          quote2 <- QuoteService.insert (NewQuote 200 (Customer.id customer) (Company.id company) "meer onnozelheid" "vree rap")
+          quote3 <- QuoteService.insert (NewQuote 300 (Customer.id customer) (Company.id company) "absolute onzin" "vree rap")
 
           invoiceList1 <- FixedPriceInvoiceService.list 0 10
           liftIO $ fst invoiceList1 `shouldBe` 0

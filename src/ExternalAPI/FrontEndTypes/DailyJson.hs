@@ -12,6 +12,7 @@ import qualified Data.Text                          as Text
 import qualified Data.Text.Encoding                 as TextEnc
 import           Data.Time                          (Day)
 import           Data.UUID                          (UUID)
+import           Domain.Company                     (Company)
 import           Domain.Customer
 import           Domain.Daily
 import           GHC.Generics                       (Generic)
@@ -29,7 +30,7 @@ data DailyJson = DailyJson
     day            :: Day,
     workpacks      :: [WorkPack],
     customerId     :: BusinessId Customer,
-    companyVat     :: Text,
+    companyVat     :: BusinessId Company,
     alreadyInvoice :: Bool
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)

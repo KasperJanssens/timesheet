@@ -105,9 +105,9 @@ nextNumber companyBusinessId@(BusinessId companyId) = do
   update (entityKey companyEntity) [CompanyRecordCurrentLastInvoiceFollowUpNumber =. Just nextNumber]
   return nextNumber
 
-nextQuoteNumber :: MonadIO m => Text -> ReaderT SqlBackend m Int
-nextQuoteNumber vatNumber = do
-  maybeCompanyEntity <- getBy (UniqueCompanyVAT vatNumber)
+nextQuoteNumber :: MonadIO m => BusinessId Company -> ReaderT SqlBackend m Int
+nextQuoteNumber companyId = do
+  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId companyId)
   companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyEntity
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastQuoteFollowUpNumber $ entityVal companyEntity

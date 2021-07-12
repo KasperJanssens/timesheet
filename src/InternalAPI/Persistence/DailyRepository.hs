@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module InternalAPI.Persistence.DailyRepository where
 
@@ -41,7 +42,7 @@ import Domain.Customer (Customer)
 import Domain.Company (Company)
 
 share
-  [mkPersist sqlSettings, mkMigrate "migrateDaily"]
+  [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateDaily"]
   [persistLowerCase|
 WorkPackRecord
     businessId (BusinessId WorkPack)
@@ -76,13 +77,13 @@ toWorkPack (WorkPackRecord  bId a t d _ _) = WorkPack bId a (read t) d
 fromWorkPack :: Key DailyRecord -> WorkPack -> WorkPackRecord
 fromWorkPack dailyRecordId (WorkPack bId a t d) = WorkPackRecord bId a (show t) d dailyRecordId Nothing
 
-toDaily :: BusinessId Daily -> BusinessId Customer -> Text -> [WorkPack] -> Day -> Bool -> Daily
-toDaily dailyId customerId companyVat workPacks d = Daily dailyId d workPacks customerId companyVat
+toDaily :: BusinessId Daily -> BusinessId Customer -> BusinessId Company -> [WorkPack] -> Day -> Bool -> Daily
+toDaily dailyId customerId companyId workPacks d = Daily dailyId d workPacks customerId companyId
 
 to :: CustomerRecord -> CompanyRecord -> [WorkPackRecord] -> DailyRecord -> Daily
 to customerRecord companyRecord workPackRecords dailyRecord =
   let workPacks = toWorkPack <$> workPackRecords
-   in toDaily ( dailyRecordBusinessId dailyRecord) ( customerRecordBusinessId customerRecord) (companyRecordVatNumber companyRecord) workPacks (dailyRecordDay dailyRecord) (dailyRecordAlreadyInvoiced dailyRecord)
+   in toDaily ( dailyRecordBusinessId dailyRecord) ( customerRecordBusinessId customerRecord) (companyRecordBusinessId companyRecord) workPacks (dailyRecordDay dailyRecord) (dailyRecordAlreadyInvoiced dailyRecord)
 
 workPacksForMonth :: (MonadIO m) => BusinessId Customer -> BusinessId Company -> Int -> Int -> ReaderT SqlBackend m [Daily]
 workPacksForMonth customerId companyId year month = do
@@ -129,13 +130,13 @@ findByDay dailyId = do
     maybeDaily
 
 insertDaily :: (MonadIO m) => Daily -> ReaderT SqlBackend m DailyRecordId
-insertDaily (Daily uuid day workPacks customerId companyVat alreadyInvoiced) = do
+insertDaily (Daily uuid day workPacks customerId companyId alreadyInvoiced) = do
   now <- liftIO getCurrentTime
   let (year, month, _) = toGregorian day
   maybeCustomer <- getBy (UniqueCustomerBusinessId customerId)
-  maybeCompany <- getBy (UniqueCompanyVAT companyVat)
+  maybeCompany <- getBy (UniqueCompanyBusinessId companyId)
   let maybeDailyRecord = liftA2 (DailyRecord uuid day now month (fromIntegral year) alreadyInvoiced) (entityKey <$> maybeCustomer) (entityKey <$> maybeCompany)
-  dailyRecord <-  liftIO $ maybe (throw $ RepositoryError "Daily record noet found") return  maybeDailyRecord
+  dailyRecord <-  liftIO $ maybe (throw $ RepositoryError "Daily record : company or customer not found") return  maybeDailyRecord
   dailyRecordId <- insert dailyRecord
   let workPackRecords = fromWorkPack dailyRecordId <$> workPacks
   insertMany_ workPackRecords
@@ -225,7 +226,7 @@ getDailies start stop = do
 
 deleteDaily :: (MonadIO m) => BusinessId Daily -> ReaderT SqlBackend m ()
 deleteDaily uuid = do
-  deleteBy (UniqueDailyBusinessId uuid)
+  deleteCascadeWhere [DailyRecordBusinessId ==. uuid]
 
 markAsInvoiced ::(MonadIO m) => BusinessId Daily -> ReaderT SqlBackend m ()
 markAsInvoiced businessId = do

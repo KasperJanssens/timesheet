@@ -3,7 +3,7 @@ export const toSelectCustomers = customers => customers.map(customer => ({
     name: customer.name
 }))
 export const toSelectCompanies = companies => companies.map(company => ({
-    id: company.vatNumber,
+    id: company.id,
     name: company.name
 }))
 

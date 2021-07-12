@@ -47,10 +47,10 @@ spec = around withDatabase $
         company <- CompanyService.insert NewCompany.dummy
         customer <- CustomerService.insert NewCustomer.dummy
         let customerId = Customer.id customer
-        let companyVat = Company.vatNumber company
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId companyVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 4 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId companyVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 3 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId companyVat
+        let companyId = Company.id company
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId companyId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 4 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId companyId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 3 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId companyId
 
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3
@@ -94,11 +94,11 @@ spec = around withDatabase $
         krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
         customer <- CustomerService.insert NewCustomer.dummy
         let customerId = Customer.id customer
-        let propellantVat = Company.vatNumber propellant
-        let krondorSoftVat = Company.vatNumber krondorSoft
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId propellantVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 4 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId krondorSoftVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 3 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId propellantVat
+        let propellantId = Company.id propellant
+        let krondorSoftId = Company.id krondorSoft
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId propellantId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 4 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId krondorSoftId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 3 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId krondorSoftId
 
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3
@@ -143,11 +143,11 @@ spec = around withDatabase $
         customer2 <- CustomerService.insert (NewCustomer "KrondorSoftbis" (VATNumber "BE0893815607") "de straat" "de stad" (Just 75.0) 30)
         let customerId1 = Customer.id customer1
         let customerId2 = Customer.id customer2
-        let propellantVat = Company.vatNumber propellant
-        let krondorSoftVat = Company.vatNumber krondorSoft
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId1 propellantVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId1 krondorSoftVat
-        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId2 propellantVat
+        let propellantId = Company.id propellant
+        let krondorSoftId = Company.id krondorSoft
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 100 FUNCDESI "Functional Design"] customerId1 propellantId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 150 TECHDESI "Technical Design"] customerId1 krondorSoftId
+        void $ DailyService.insert $ NewDaily (fromGregorian 2021 5 1) [NewWorkPack 200 MEET "Meetings meetings"] customerId2 propellantId
 
         uninvoicedWork1 <- MonthlyService.selectMonthsWithUninvoicedWork
         liftIO $ uninvoicedWork1 `shouldSatisfy` hasSize 3

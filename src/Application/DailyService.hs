@@ -63,7 +63,7 @@ getAllForMonth companyId customerId (SpecificMonth y m) = do
 
 --TODO no diff anymore between daily and newDay. Keep for future or remove?
 insert :: NewDaily -> AppM Daily
-insert (NewDaily d newWps cId cVat) = do
+insert (NewDaily d newWps customId compId) = do
   pool <- asks poel
   uuid <- liftIO UUID.nextRandom
   wps <-
@@ -73,7 +73,7 @@ insert (NewDaily d newWps cId cVat) = do
           return $ WorkPack (BusinessId uuid) a w d
       )
       newWps
-  let daily = Daily (BusinessId uuid) d wps cId cVat False
+  let daily = Daily (BusinessId uuid) d wps customId compId False
   void $
     DB.executeInPool pool $
       do

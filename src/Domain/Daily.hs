@@ -7,6 +7,7 @@ import           Data.Aeson                         (FromJSON, ToJSON)
 import           Data.Text                          (Text)
 import           Data.Time.Calendar
 import           Data.UUID                          (UUID)
+import           Domain.Company                     (Company)
 import           Domain.Customer                    (Customer)
 import           GHC.Generics                       (Generic)
 import           InternalAPI.Persistence.BusinessId
@@ -29,7 +30,7 @@ data Daily = Daily
     day             :: Day,
     workpacks       :: [WorkPack],
     customerId      :: BusinessId Customer,
-    companyVat      :: Text,
+    companyVat      :: BusinessId Company,
     alreadyInvoiced :: Bool
   }
   deriving (FromJSON, ToJSON, Generic, Show, Eq)

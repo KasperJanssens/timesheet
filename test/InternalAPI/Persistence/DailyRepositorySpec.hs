@@ -34,11 +34,11 @@ spec = around withDatabase $
       resOrErr <- runAppM initialState $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
         company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "die stad" "de rekening" Nothing Nothing
-        return (Customer.id customer, Company.vatNumber company)
-      let (customerId, companyVatNumber) = fromRight undefined resOrErr
+        return (Customer.id customer, Company.id company)
+      let (customerId, companyId) = fromRight undefined resOrErr
       uuid <- UUID.nextRandom
       let dailyBusinessId = BusinessId uuid
-      let daily = Daily dailyBusinessId day [] customerId companyVatNumber False
+      let daily = Daily dailyBusinessId day [] customerId companyId False
       recordId <- runWithoutPool connString $ DailyRecord.insertDaily daily
       maybeRes <- runWithoutPool connString $ DailyRecord.findByDay dailyBusinessId
 

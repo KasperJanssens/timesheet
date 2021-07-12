@@ -123,16 +123,16 @@ const ChooseQuoteOrFixedPrice = (props) => {
     let selectQuotes = toSelectQuotes(Object.values(quotes))
 
 
-    return (<div><BooleanInput label="From Quote" source="fromQuote"/>
+    return (<div class="ra-input"><BooleanInput label="From Quote" source="fromQuote"/>
             {values.fromQuote ?
-                <SelectInput source="invoice.Right" choices={selectQuotes} label={"Choose quote"}/> :
+                <div class="ra-input"><SelectInput source="invoice.Right" choices={selectQuotes} label={"Choose quote"}/></div> :
                 <div>
-                    <NumberInput source="invoice.Left.total" label={"Total in euros excl vat"}/>
-                    <SelectInput source={"invoice.Left.customerId"} choices={selectCustomers}
-                                 label={"choose customer"}/>
-                    <SelectInput source={"invoice.Left.companyId"} choices={selectCompanies}
-                                 label={"choose company"}/>
-                     <TextInput source={"invoice.Left.description"} label={"Description"}/>
+                    <div class="ra-input"><NumberInput source="invoice.Left.total" label={"Total in euros excl vat"}/></div>
+                    <div class="ra-input"><SelectInput source={"invoice.Left.customerId"} choices={selectCustomers}
+                                 label={"choose customer"}/></div>
+                    <div class="ra-input"><SelectInput source={"invoice.Left.companyId"} choices={selectCompanies}
+                                 label={"choose company"}/></div>
+                     <div class="ra-input"><TextInput source={"invoice.Left.description"} label={"Description"}/></div>
                 </div>
             }
         </div>

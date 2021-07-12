@@ -30,7 +30,7 @@ spec = around withDatabase $
         listResult <- QuoteService.list 0 10
         liftIO $ fst listResult `shouldBe` 0
         liftIO $ snd listResult `shouldSatisfy` null
-        quote <- QuoteService.insert (NewQuote quoteVal (Customer.id customer) (Company.vatNumber company) "onnozelheid" "vree rap")
+        quote <- QuoteService.insert (NewQuote quoteVal (Customer.id customer) (Company.id company) "onnozelheid" "vree rap")
         QuoteService.get (Quote.id quote)
       quoteRes `shouldSatisfy` isRight
       let quote = fromJust . fromRight undefined $ quoteRes

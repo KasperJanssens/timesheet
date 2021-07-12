@@ -27,6 +27,7 @@ import           Data.UUID                                           (UUID)
 import qualified Data.UUID.V4                                        as UUID
 import           Database.Persist.Postgresql
 import           Database.Persist.TH
+import           Domain.Company                                      (Company)
 import           Domain.Customer
 import           Domain.FixedPriceInvoice
 import           Domain.MonthlyReport                                (VATReport (..))
@@ -124,11 +125,11 @@ listNonInvoiced = do
   mapM (retrieveCustomer . entityVal) records
 
 --TODO companyId instead of companyVat
-insertQuote :: MonadIO m => BusinessId Customer -> Text -> Double -> Day -> Text -> Text ->  ReaderT SqlBackend m Quote
-insertQuote customerId companyVat total today termsOfDelivery description  = do
+insertQuote :: MonadIO m => BusinessId Customer -> BusinessId Company -> Double -> Day -> Text -> Text ->  ReaderT SqlBackend m Quote
+insertQuote customerId companyId total today termsOfDelivery description  = do
   maybeCustomer <- getBy . UniqueCustomerBusinessId  $ customerId
-  maybeCompany <- getBy . UniqueCompanyVAT $ companyVat
-  newFollowUpNumber <- CompanyRepository.nextQuoteNumber companyVat
+  maybeCompany <- getBy . UniqueCompanyBusinessId $ companyId
+  newFollowUpNumber <- CompanyRepository.nextQuoteNumber companyId
   uuid <- liftIO UUID.nextRandom
   customerRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCustomer
   companyRecord <- liftIO $ maybe (throw $ RepositoryError "Customer not found") return maybeCompany
