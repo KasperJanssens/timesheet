@@ -5,6 +5,7 @@ module ExternalAPI.NewTypes.NewFixedPriceInvoice where
 
 import           Data.Aeson                         (FromJSON, ToJSON)
 import           Data.Text                          (Text)
+import           Data.Time.Calendar                 (Day)
 import           Data.UUID                          (UUID)
 import           Domain.Company
 import           Domain.Customer
@@ -21,6 +22,7 @@ data NonQuote = NonQuote
   deriving (FromJSON, ToJSON, Generic, Eq, Show)
 
 data NewFixedPriceInvoice = NewFixedPriceInvoice
-  { invoice :: Either NonQuote (BusinessId Quote)
+  { invoice :: Either NonQuote (BusinessId Quote),
+    day     :: Day
   }
   deriving (FromJSON, ToJSON, Generic, Eq, Show)

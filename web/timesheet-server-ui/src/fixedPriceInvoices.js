@@ -8,6 +8,8 @@ import {
     SimpleForm,
     SimpleShowLayout,
     SelectInput,
+    DateInput,
+    DateTimeInput,
     TextField, TextInput, Loading, Error, SelectField
 } from "react-admin";
 import React from "react";
@@ -123,7 +125,9 @@ const ChooseQuoteOrFixedPrice = (props) => {
     let selectQuotes = toSelectQuotes(Object.values(quotes))
 
 
-    return (<div class="ra-input"><BooleanInput label="From Quote" source="fromQuote"/>
+    return (<div class="ra-input">
+               <div class="ra-input"><BooleanInput label="From Quote" source="fromQuote"/></div>
+               <div class="ra-input"><DateTimeInput source={"day"}  label="Day of invoice"/></div>
             {values.fromQuote ?
                 <div class="ra-input"><SelectInput source="invoice.Right" choices={selectQuotes} label={"Choose quote"}/></div> :
                 <div>

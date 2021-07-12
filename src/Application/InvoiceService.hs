@@ -1,25 +1,25 @@
 module Application.InvoiceService where
 
-import qualified Application.CustomerService               as CustomerService
-import qualified Application.DailyService                  as DailyService
-import           Application.Environment                   (AppM, poel)
-import           Control.Monad.Cont                        (liftIO)
-import           Control.Monad.Except                      (runExceptT)
-import           Control.Monad.RWS.Class                   (asks)
-import           Data.Either.Combinators                   (fromRight)
-import           Data.Time
-import           Data.UUID                                 (UUID)
-import           Domain.Daily                              (workpacks)
-import           Domain.Invoice
-import           Domain.Monthly
-import           Domain.MonthlyId
-import           Domain.MonthlyReport
-import           ExternalAPI.NewTypes.NewInvoice
-import           InternalAPI.Persistence.BusinessId
-import           InternalAPI.Persistence.DailyRepository   as DailyRepository
-import qualified InternalAPI.Persistence.Database          as DB
-import           InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
-import           Numeric.Natural
+import qualified Application.CustomerService as CustomerService
+import qualified Application.DailyService as DailyService
+import Application.Environment (AppM, poel)
+import Control.Monad.Cont (liftIO)
+import Control.Monad.Except (runExceptT)
+import Control.Monad.RWS.Class (asks)
+import Data.Either.Combinators (fromRight)
+import Data.Time
+import Data.UUID (UUID)
+import Domain.Daily (workpacks)
+import Domain.Invoice
+import Domain.Monthly
+import Domain.MonthlyId
+import Domain.MonthlyReport
+import ExternalAPI.NewTypes.NewInvoice
+import InternalAPI.Persistence.BusinessId
+import InternalAPI.Persistence.DailyRepository as DailyRepository
+import qualified InternalAPI.Persistence.Database as DB
+import InternalAPI.Persistence.InvoiceRepository as InvoiceRepository
+import Numeric.Natural
 
 list :: Natural -> Natural -> AppM (Int, [Invoice])
 list from to = do
@@ -36,17 +36,17 @@ get invoiceId = do
 
 insert :: MonthlyId -> Day -> AppM Invoice
 insert (MonthlyId y m customerId companyId) today = do
---  time <- liftIO getCurrentTime
---  let today = utctDay time
-  let specificMonth =  SpecificMonth y m
---  TODO fix monthly id to have explicit busoiness ids iso uuids
-  paymentDay <- CustomerService.determinePaymentDate today  customerId
-  dailies <- DailyService.getAllForMonth  companyId customerId specificMonth
+  --  time <- liftIO getCurrentTime
+  --  let today = utctDay time
+  let specificMonth = SpecificMonth y m
+  --  TODO fix monthly id to have explicit busoiness ids iso uuids
+  paymentDay <- CustomerService.determinePaymentDate today customerId
+  dailies <- DailyService.getAllForMonth companyId customerId specificMonth
   let ws = concat $ workpacks <$> dailies
   let entries = createEntries ws
   pool <- asks poel
   DB.executeInPool pool $ do
-    invoice <- InvoiceRepository.insertInvoice customerId  companyId specificMonth entries today paymentDay
+    invoice <- InvoiceRepository.insertInvoice customerId companyId specificMonth entries today paymentDay
     DailyRepository.linkInvoiceToWorkpacks ws (Domain.Invoice.id invoice)
     DailyRepository.markAllAsInvoiced dailies
     return invoice

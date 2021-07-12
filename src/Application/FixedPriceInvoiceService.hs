@@ -49,24 +49,22 @@ get specificUUID = do
   pool <- asks poel
   DB.executeInPool pool $ FixedPriceInvoiceRepository.getFixedPriceInvoice specificUUID
 
-insert' :: Maybe (BusinessId Quote) -> Double -> Text -> BusinessId Customer -> BusinessId Company -> AppM FixedPriceInvoice
-insert' maybeQuoteId total description customerId companyId = do
+insert' :: Maybe (BusinessId Quote) -> Double -> Text -> BusinessId Customer -> BusinessId Company -> Day -> AppM FixedPriceInvoice
+insert' maybeQuoteId total description customerId companyId today = do
   maybeCustomer <- CustomerService.get customerId
-  time <- liftIO getCurrentTime
   pool <- asks poel
   DB.executeInPool pool $ do
-    let today = utctDay time
     let paymentDay = CustomerService.determinePaymentDate' today (fromJust maybeCustomer)
     invoice <- FixedPriceInvoiceRepository.insertFixedPriceInvoice customerId companyId today paymentDay description total
     maybe (return ()) (QuoteRepository.linkInvoice (FixedPriceInvoice.id invoice)) maybeQuoteId
     return invoice
 
 insert :: NewFixedPriceInvoice -> AppM FixedPriceInvoice
-insert (NewFixedPriceInvoice (Left (NonQuote total customerId companyId description))) = insert' Nothing total description customerId companyId
-insert (NewFixedPriceInvoice (Right quoteBusinessId)) = insertFromQuote quoteBusinessId
+insert (NewFixedPriceInvoice (Left (NonQuote total customerId companyId description)) day) = insert' Nothing total description customerId companyId day
+insert (NewFixedPriceInvoice (Right quoteBusinessId) day) = insertFromQuote quoteBusinessId day
 
-insertFromQuote :: BusinessId Quote -> AppM FixedPriceInvoice
-insertFromQuote quoteId = do
+insertFromQuote :: BusinessId Quote -> Day ->  AppM FixedPriceInvoice
+insertFromQuote quoteId today= do
   maybeQuote <- QuoteService.get quoteId
   quote <- maybe (throw (err404 {errBody = "quote not found"})) return maybeQuote
-  insert' (Just quoteId) (VATReport.totalExcl $ Quote.vatReport quote) (Quote.description quote) (Customer.id $ Quote.customer quote) (Company.id $ Quote.company quote)
+  insert' (Just quoteId) (VATReport.totalExcl $ Quote.vatReport quote) (Quote.description quote) (Customer.id $ Quote.customer quote) (Company.id $ Quote.company quote) today

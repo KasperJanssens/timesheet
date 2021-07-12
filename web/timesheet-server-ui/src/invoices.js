@@ -69,7 +69,7 @@ export const InvoiceCreate = (props) => {
     return (
         <Create  {...props}>
             <SimpleForm>
-                <DateInput source={"day"} locales={"nl"} label="Day of invoice (can antedate)"/>
+                <DateInput source={"day"} label="Day of invoice (can antedate)"  initialValue={Date.now()}/>
                 <SelectInput source={"monthlyId"} choices={monthlyChoices}/>
             </SimpleForm>
         </Create>)
