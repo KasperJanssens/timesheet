@@ -39,6 +39,8 @@ import qualified InternalAPI.Persistence.CompanyRepository  as CompanyRepository
 import           InternalAPI.Persistence.CustomerRepository hiding (to)
 import qualified InternalAPI.Persistence.CustomerRepository as CustomerRepository
 import           InternalAPI.Persistence.RepositoryError    (RepositoryError (..))
+import qualified Data.List as List
+import Data.List (foldl1')
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateInvoice"]
@@ -63,6 +65,18 @@ InvoiceRecord
 
 toReportEntry :: Double -> ReportEntryRecord -> ReportEntry
 toReportEntry rate (ReportEntryRecord d h _) = ReportEntry d h (rate * h)
+
+--TODO This can become mconcat of monoid potentially
+concatReportEntries :: [ReportEntry] -> ReportEntry
+concatReportEntries = foldl1' (\ acc elem -> ReportEntry (omschrijving acc) (aantalUur acc + aantalUur elem) (subTotaal acc + subTotaal elem))
+
+
+groupReportEntries :: [ReportEntry] -> [ReportEntry]
+groupReportEntries entries =
+  let sortedEntries = List.sortOn omschrijving entries in
+    let grouped = List.groupBy (\l r -> omschrijving l == omschrijving r) sortedEntries in
+      concatReportEntries <$> grouped
+
 
 allInvoices :: [Filter InvoiceRecord]
 allInvoices = []
@@ -95,7 +109,7 @@ createMonthlyReport (InvoiceRecord _ m y dayOfIn dayOfPay _ _ i) reportEntryReco
           return $ MonthlyReport
                             (SpecificMonth (fromIntegral y) m)
                             totalDays
-                            (toReportEntry hourlyRate <$> reportEntryRecords)
+                            (groupReportEntries (toReportEntry hourlyRate <$> reportEntryRecords))
                             (VATReport totalExcl totalVAT total)
                             (toTextMonth m)
                             (toStrict . toLazyText . decimal $ i)

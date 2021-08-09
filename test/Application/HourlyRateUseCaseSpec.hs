@@ -12,7 +12,9 @@ import           Common.Helper
 import           Control.Monad                      (void)
 import           Control.Monad.IO.Class             (liftIO)
 import           Data.Either                        (isRight)
-import           Data.Time                          (fromGregorian, getCurrentTime, utctDay)
+import           Data.Maybe                         (fromJust)
+import           Data.Time                          (fromGregorian,
+                                                     getCurrentTime, utctDay)
 import qualified Data.UUID.V4                       as UUID
 import           Domain.Company                     (Company (..))
 import qualified Domain.Company                     as Company
@@ -23,6 +25,7 @@ import qualified Domain.Invoice                     as Invoice
 import           Domain.Monthly                     (SpecificMonth (..))
 import           Domain.MonthlyId
 import qualified Domain.MonthlyReport               as MonthlyReport
+import           Domain.VAT                         (maybeCreateBelgianVAT)
 import           ExternalAPI.NewTypes.NewCompany
 import qualified ExternalAPI.NewTypes.NewCompany    as NewCompany
 import           ExternalAPI.NewTypes.NewCustomer   (NewCustomer (..))
@@ -91,7 +94,7 @@ spec = around withDatabase $
       state <- createInitialState connString
       res <- runAppM state $ do
         propellant <- CompanyService.insert NewCompany.dummy
-        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
+        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" (fromJust $ maybeCreateBelgianVAT 8938156 06) "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
         customer <- CustomerService.insert NewCustomer.dummy
         let customerId = Customer.id customer
         let propellantId = Company.id propellant
@@ -138,7 +141,7 @@ spec = around withDatabase $
       state <- createInitialState connString
       res <- runAppM state $ do
         propellant <- CompanyService.insert NewCompany.dummy
-        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" "BE0893815606" "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
+        krondorSoft <- CompanyService.insert (NewCompany "KrondorSoft" (fromJust $ maybeCreateBelgianVAT 8938156 06) "OGS 354" "ginder" "Ievrs op een bank" Nothing Nothing)
         customer1 <- CustomerService.insert NewCustomer.dummy
         customer2 <- CustomerService.insert (NewCustomer "KrondorSoftbis" (VATNumber "BE0893815607") "de straat" "de stad" (Just 75.0) 30)
         let customerId1 = Customer.id customer1

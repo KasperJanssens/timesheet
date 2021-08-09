@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 02e3d492aa2d55162d90ec3d15d5cca064a9698c21865dcae0156c082dfa3712
+-- hash: 9031e49faae49afd8245ca8d15908c5ce05d757f536b19c856446442b859c781
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -48,6 +48,7 @@ library
       Domain.MonthlyId
       Domain.MonthlyReport
       Domain.Quote
+      Domain.VAT
       ExternalAPI.ApiType
       ExternalAPI.FrontEndTypes.DailyJson
       ExternalAPI.FrontEndTypes.MonthlyListJson
@@ -77,6 +78,7 @@ library
       aeson ==1.5.6.0
     , aeson-casing ==0.2.0.0
     , aeson-pretty ==0.8.8
+    , attoparsec ==0.13.2.5
     , base >=4.7 && <5
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
@@ -121,6 +123,53 @@ executable timesheet
       aeson ==1.5.6.0
     , aeson-casing ==0.2.0.0
     , aeson-pretty ==0.8.8
+    , attoparsec ==0.13.2.5
+    , base >=4.7 && <5
+    , bytestring ==0.10.12.0
+    , containers ==0.6.2.1
+    , either ==5.0.1.1
+    , hspec ==2.7.8
+    , http-client ==0.6.4.1
+    , http-types ==0.12.3
+    , monad-logger ==0.3.36
+    , mtl ==2.2.2
+    , persistent ==2.11.0.4
+    , persistent-postgresql ==2.11.0.1
+    , persistent-template ==2.9.1.0
+    , port-utils ==0.2.1.0
+    , resource-pool ==0.2.3.2
+    , resourcet ==1.2.4.2
+    , safe ==0.3.19
+    , servant ==0.18.2
+    , servant-client ==0.18.2
+    , servant-server ==0.18.2
+    , stm ==2.5.0.0
+    , string-interpolate ==0.3.1.0
+    , text ==1.2.4.1
+    , text-builder ==0.6.6.2
+    , time ==1.9.3
+    , timesheet-server
+    , transformers ==0.5.6.2
+    , uuid ==1.3.14
+    , wai ==3.2.3
+    , wai-cors ==0.2.7
+    , wai-extra ==3.1.6
+    , wai-logger ==2.3.6
+    , warp ==3.3.14
+  default-language: Haskell2010
+
+executable timesheet-for-test
+  main-is: Main.hs
+  other-modules:
+      Paths_timesheet_server
+  hs-source-dirs:
+      apptest
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson ==1.5.6.0
+    , aeson-casing ==0.2.0.0
+    , aeson-pretty ==0.8.8
+    , attoparsec ==0.13.2.5
     , base >=4.7 && <5
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
@@ -164,6 +213,7 @@ test-suite unit-test
       Application.InvoiceServiceSpec
       Application.QuoteServiceSpec
       Application.QuoteUseCaseSpec
+      Domain.VATSpec
       ExternalAPI.MonthlyReportSpec
       Helper.DatabaseHelper
       Helper.TestHelper
@@ -178,6 +228,7 @@ test-suite unit-test
       aeson ==1.5.6.0
     , aeson-casing ==0.2.0.0
     , aeson-pretty ==0.8.8
+    , attoparsec ==0.13.2.5
     , base >=4.7 && <5
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1

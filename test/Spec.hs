@@ -7,6 +7,7 @@ import qualified ExternalAPI.MonthlyReportSpec                  as MonthlyReport
 import qualified InternalAPI.Persistence.CompanyRepositorySpec  as CompanyRepositorySpec
 import qualified InternalAPI.Persistence.CustomerRepositorySpec as CustomerRecordSpec
 import qualified InternalAPI.Persistence.DailyRepositorySpec    as DailyRecordSpec
+import qualified Domain.VATSpec as VATSpec
 import           Test.Hspec
 
 main :: IO ()
@@ -20,3 +21,4 @@ main = hspec $ do
   QuoteUseCaseSpec.spec
   HourlyRateUseCaseSpec.spec
   CompanyRepositorySpec.unitSpec
+  VATSpec.spec

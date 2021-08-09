@@ -127,7 +127,7 @@ const ChooseQuoteOrFixedPrice = (props) => {
 
     return (<div class="ra-input">
                <div class="ra-input"><BooleanInput label="From Quote" source="fromQuote"/></div>
-               <div class="ra-input"><DateTimeInput source={"day"}  label="Day of invoice"/></div>
+               <div class="ra-input"><DateInput source={"day"}  label="Day of invoice"/></div>
             {values.fromQuote ?
                 <div class="ra-input"><SelectInput source="invoice.Right" choices={selectQuotes} label={"Choose quote"}/></div> :
                 <div>

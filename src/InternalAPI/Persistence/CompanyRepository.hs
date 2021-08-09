@@ -27,6 +27,7 @@ import           Database.Persist.Postgresql
 import           Database.Persist.TH
 import           Domain.Company
 import           Domain.ExternalBusinessId
+import           Domain.VAT                              (VAT)
 import           ExternalAPI.NewTypes.NewCompany
 import           InternalAPI.Persistence.BusinessId
 import           InternalAPI.Persistence.RepositoryError
@@ -37,7 +38,7 @@ share
 CompanyRecord
     businessId (BusinessId Company)
     name Text
-    vatNumber Text
+    vatNumber VAT
     addressStreet Text
     addressCity Text
     bankAccountNumber Text
@@ -60,14 +61,14 @@ to (CompanyRecord businessId n v a1 a2 b c q) = Company businessId n v a1 a2 b c
 from :: UUID -> NewCompany -> CompanyRecord
 from uuid (NewCompany n v a1 a2 b c q) = CompanyRecord (BusinessId uuid) n v a1 a2 b c q
 
-getCompanyByVat :: MonadIO m => Text -> ReaderT SqlBackend m (Maybe Company)
+getCompanyByVat :: MonadIO m => VAT -> ReaderT SqlBackend m (Maybe Company)
 getCompanyByVat vatNumber = do
   companyEntity <- getBy (UniqueCompanyVAT vatNumber)
   return $ to . entityVal <$> companyEntity
 
 getCompany :: MonadIO m => BusinessId Company -> ReaderT SqlBackend m (Maybe Company)
 getCompany businessId = do
-  companyEntity <- getBy (UniqueCompanyBusinessId  businessId)
+  companyEntity <- getBy (UniqueCompanyBusinessId businessId)
   return $ to . entityVal <$> companyEntity
 
 getCompanies :: MonadIO m => Int -> Int -> ReaderT SqlBackend m [Company]
@@ -80,7 +81,7 @@ getAllCompanies = do
   records <- selectList [] [Desc CompanyRecordVatNumber]
   return $ map (to . entityVal) records
 
-insertCompany :: MonadIO m => BusinessId Company  -> NewCompany -> ReaderT SqlBackend m Company
+insertCompany :: MonadIO m => BusinessId Company -> NewCompany -> ReaderT SqlBackend m Company
 insertCompany businessId@(BusinessId uuid) newCompany@(NewCompany n v a1 a2 b c q) = do
   void $ insert (from uuid newCompany)
   return $ Company businessId n v a1 a2 b c q
@@ -98,7 +99,7 @@ upWithNumber today (Just cur) =
 
 nextNumber :: MonadIO m => BusinessId Company -> ReaderT SqlBackend m Int
 nextNumber companyBusinessId@(BusinessId companyId) = do
-  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId  companyBusinessId)
+  maybeCompanyEntity <- getBy (UniqueCompanyBusinessId companyBusinessId)
   companyEntity <- liftIO $ maybe (throw $ RepositoryError "Company not found") return maybeCompanyEntity
   time <- liftIO getCurrentTime
   let nextNumber = upWithNumber time $ companyRecordCurrentLastInvoiceFollowUpNumber $ entityVal companyEntity

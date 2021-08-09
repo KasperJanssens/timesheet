@@ -49,6 +49,7 @@ export const InvoiceList = props => {
     );
 }
 
+
 export const InvoiceCreate = (props) => {
     const {
         data: monthlies,
@@ -61,15 +62,14 @@ export const InvoiceCreate = (props) => {
     if (loadingMonthlies) return <Loading/>;
     if (errorMonthlies) return <Error error={"Could not load work types"}/>;
     const monthlyValues = Object.values(monthlies)
-    // monthlyValues.forEach((item, n, r) => console.log(item))
     const monthlyChoices = monthlyValues.map(item => ({
         id: item.id,
-        name: item.year + " " + item.month + " " + item.company.name + " " + item.customer.name
+        name: "Invoice for " + item.month+"/" + item.year + ", from " + item.company.name + " to " + item.customer.name
     }));
     return (
         <Create  {...props}>
             <SimpleForm>
-                <DateInput source={"day"} label="Day of invoice (can antedate)"  initialValue={Date.now()}/>
+                <DateInput source={"day"} label="Day of invoice (can antedate)"  initialValue={Date.now().toISOString()}/>
                 <SelectInput source={"monthlyId"} choices={monthlyChoices}/>
             </SimpleForm>
         </Create>)

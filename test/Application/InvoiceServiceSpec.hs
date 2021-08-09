@@ -29,6 +29,8 @@ import           Helper.DatabaseHelper
 import           Test.Hspec
 import qualified InternalAPI.Persistence.BusinessId as BusinessId
 import Data.Time (getCurrentTime, utctDay)
+import Domain.VAT(maybeCreateBelgianVAT)
+import Data.Maybe(fromJust)
 
 spec :: Spec
 spec = around withDatabase $
@@ -36,7 +38,7 @@ spec = around withDatabase $
     it "should find an invoice, without monthly report" $ \connString -> do
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "dat stadje" "de rekening" Nothing Nothing
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" (fromJust $ maybeCreateBelgianVAT 8938156 06) "hier" "dat stadje" "de rekening" Nothing Nothing
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
         let customerId = Domain.Customer.id customer
         let companyId = Domain.Company.id company
@@ -54,7 +56,7 @@ spec = around withDatabase $
       state <- createInitialState connString
       invoiceOrErr <- runAppM state $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "dees stadje" "de rekening" Nothing Nothing
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" (fromJust $ maybeCreateBelgianVAT 8938156 06)  "hier" "dees stadje" "de rekening" Nothing Nothing
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 2) [NewWorkPack 7.0 IMPL "Jos"] (Customer.id customer) (Company.id company))
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 3) [NewWorkPack 5.0 IMPL "Jos"] (Customer.id customer) (Company.id company))
         void $ DailyService.insert (NewDaily (fromGregorian 2021 5 4) [NewWorkPack 6.0 IMPL "Jos"] (Customer.id customer) (Company.id company))

@@ -20,6 +20,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/timesheet-server#readme>
 
 dependencies:
+- attoparsec == 0.13.2.5
 - base >= 4.7 && < 5
 - text == 1.2.4.1
 - aeson == 1.5.6.0
@@ -63,6 +64,15 @@ executables:
   timesheet:
     main:                Main.hs
     source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - timesheet-server
+  timesheet-for-test:
+    main:                Main.hs
+    source-dirs:         apptest
     ghc-options:
     - -threaded
     - -rtsopts

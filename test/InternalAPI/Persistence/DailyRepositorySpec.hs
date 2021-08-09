@@ -8,14 +8,15 @@ import qualified Application.CompanyService              as CompanyService
 import qualified Application.CustomerService             as CustomerService
 import           Data.Either.Combinators                 (fromRight)
 import           Data.Maybe                              (isJust)
+import           Data.Maybe                              (fromJust)
 import           Data.Time                               (getCurrentTime,
                                                           utctDay)
 import qualified Data.UUID.V4                            as UUID
-import           Domain.Company
 import qualified Domain.Company                          as Company
 import           Domain.Customer
 import qualified Domain.Customer                         as Customer
 import           Domain.Daily
+import           Domain.VAT                              (maybeCreateBelgianVAT)
 import           ExternalAPI.NewTypes.NewCompany
 import           ExternalAPI.NewTypes.NewCustomer
 import           Helper.DatabaseHelper
@@ -33,7 +34,7 @@ spec = around withDatabase $
       initialState <- createInitialState connString
       resOrErr <- runAppM initialState $ do
         customer <- CustomerService.insert (NewCustomer "Jos" (VATNumber "een nummer") "de straat" "de stad" (Just 75.0) 30)
-        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" "BEnogiet" "hier" "die stad" "de rekening" Nothing Nothing
+        company <- CompanyService.insert $ NewCompany "Jos het bedrijf" (fromJust $ maybeCreateBelgianVAT 8938156 06)  "hier" "die stad" "de rekening" Nothing Nothing
         return (Customer.id customer, Company.id company)
       let (customerId, companyId) = fromRight undefined resOrErr
       uuid <- UUID.nextRandom

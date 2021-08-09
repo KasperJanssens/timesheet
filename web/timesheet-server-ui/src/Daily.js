@@ -38,14 +38,7 @@ export const DailyList = props => {
         <List {...props}>
             <Datagrid rowClick="show">
                 <DateField source={"day"} locales={"nl-BE"}/>
-
-                <ArrayField source="workpacks" label="WorkPacks">
-                    <Datagrid>
-                        <SelectField source={"workType"} choices={Object.values(worktypes)}/>
-                        <TextField source={"description"}/>
-                        <NumberField source="amount" options={{maximumFractionDigits: 1}}/>
-                    </Datagrid>
-                </ArrayField>
+                <NumberField source="totalHours" label="Total Hours"/>
 
             </Datagrid>
         </List>
