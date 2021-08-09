@@ -2,13 +2,15 @@
 
 module Domain.VATSpec where
 
-import Data.Either (isRight)
-import qualified Domain.VAT as VAT
-import Domain.VAT(VAT(..))
-import Test.Hspec
-import Data.Aeson.Types (toJSON, fromJSON)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Aeson.Types       (fromJSON, toJSON)
+import           Data.Either            (isRight)
+import           Domain.VAT             (VAT (..))
+import qualified Domain.VAT             as VAT
+import           Test.Sandwich
+import Helper.TestHelper
 
-spec :: Spec
+spec :: CoreSpec
 spec = describe "calculate vat numbers" $ do
   it "should recognize a correct dutch number" $ do
     let res = VAT.parse "NL810433941B01"
@@ -19,8 +21,8 @@ spec = describe "calculate vat numbers" $ do
     res2 `shouldBe` Right (BE 8938156 06)
   it "should nicely go to and from json" $ do
     let myVat = BE 8938156 06
-    print $ VAT.prettyPrint myVat
+    liftIO $ print $ VAT.prettyPrint myVat
     let jsonVat = toJSON myVat
     let parseResult = fromJSON jsonVat
     parseResult `shouldBe` pure myVat
-    
+

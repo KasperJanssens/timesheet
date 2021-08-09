@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9031e49faae49afd8245ca8d15908c5ce05d757f536b19c856446442b859c781
+-- hash: 8fb99c31029d059ff312692b4902cafeb18f6fe8fbffc0fe129e5536f34d5b45
 
 name:           timesheet-server
 version:        0.1.0.0
@@ -83,6 +83,7 @@ library
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
     , either ==5.0.1.1
+    , exceptions ==0.10.4
     , hspec ==2.7.8
     , http-client ==0.6.4.1
     , http-types ==0.12.3
@@ -95,6 +96,8 @@ library
     , resource-pool ==0.2.3.2
     , resourcet ==1.2.4.2
     , safe ==0.3.19
+    , safe-exceptions ==0.1.7.1
+    , sandwich ==0.1.0.8
     , servant ==0.18.2
     , servant-client ==0.18.2
     , servant-server ==0.18.2
@@ -128,6 +131,7 @@ executable timesheet
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
     , either ==5.0.1.1
+    , exceptions ==0.10.4
     , hspec ==2.7.8
     , http-client ==0.6.4.1
     , http-types ==0.12.3
@@ -140,6 +144,8 @@ executable timesheet
     , resource-pool ==0.2.3.2
     , resourcet ==1.2.4.2
     , safe ==0.3.19
+    , safe-exceptions ==0.1.7.1
+    , sandwich ==0.1.0.8
     , servant ==0.18.2
     , servant-client ==0.18.2
     , servant-server ==0.18.2
@@ -174,6 +180,7 @@ executable timesheet-for-test
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
     , either ==5.0.1.1
+    , exceptions ==0.10.4
     , hspec ==2.7.8
     , http-client ==0.6.4.1
     , http-types ==0.12.3
@@ -186,6 +193,8 @@ executable timesheet-for-test
     , resource-pool ==0.2.3.2
     , resourcet ==1.2.4.2
     , safe ==0.3.19
+    , safe-exceptions ==0.1.7.1
+    , sandwich ==0.1.0.8
     , servant ==0.18.2
     , servant-client ==0.18.2
     , servant-server ==0.18.2
@@ -206,7 +215,7 @@ executable timesheet-for-test
 
 test-suite unit-test
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   other-modules:
       Application.FixedPriceInvoiceSpec
       Application.HourlyRateUseCaseSpec
@@ -233,6 +242,7 @@ test-suite unit-test
     , bytestring ==0.10.12.0
     , containers ==0.6.2.1
     , either ==5.0.1.1
+    , exceptions ==0.10.4
     , hspec ==2.7.8
     , http-client ==0.6.4.1
     , http-types ==0.12.3
@@ -245,6 +255,8 @@ test-suite unit-test
     , resource-pool ==0.2.3.2
     , resourcet ==1.2.4.2
     , safe ==0.3.19
+    , safe-exceptions ==0.1.7.1
+    , sandwich ==0.1.0.8
     , servant ==0.18.2
     , servant-client ==0.18.2
     , servant-server ==0.18.2

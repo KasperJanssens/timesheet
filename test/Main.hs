@@ -8,17 +8,17 @@ import qualified InternalAPI.Persistence.CompanyRepositorySpec  as CompanyReposi
 import qualified InternalAPI.Persistence.CustomerRepositorySpec as CustomerRecordSpec
 import qualified InternalAPI.Persistence.DailyRepositorySpec    as DailyRecordSpec
 import qualified Domain.VATSpec as VATSpec
-import           Test.Hspec
+import           Test.Sandwich
 
 main :: IO ()
-main = hspec $ do
+main = runSandwich defaultOptions $ do
   MonthlyReportSpec.spec
-  DailyRecordSpec.spec
-  CustomerRecordSpec.spec
-  InvoiceServiceSpec.spec
-  FixedPriceInvoiceSpec.spec
-  QuoteServiceSpec.spec
-  QuoteUseCaseSpec.spec
-  HourlyRateUseCaseSpec.spec
+--  DailyRecordSpec.spec
+--  CustomerRecordSpec.spec
+--  InvoiceServiceSpec.spec
+--  FixedPriceInvoiceSpec.spec
+--  QuoteServiceSpec.spec
+--  QuoteUseCaseSpec.spec
+--  HourlyRateUseCaseSpec.spec
   CompanyRepositorySpec.unitSpec
   VATSpec.spec

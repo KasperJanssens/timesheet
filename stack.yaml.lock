@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: sandwich-0.1.0.8@sha256:3bbe80df1a4801a66769c11b70980b32bb42530ddb816fd85c4211aa04484bab,7330
+    pantry-tree:
+      size: 5353
+      sha256: 206154a2f578ce479a6d6331b43563b5c1861371115caa6bb029d13726f4b251
+  original:
+    hackage: sandwich-0.1.0.8@sha256:3bbe80df1a4801a66769c11b70980b32bb42530ddb816fd85c4211aa04484bab,7330
 snapshots:
 - completed:
     size: 565720
